@@ -35,7 +35,18 @@ export class RadioEngine {
   private timerHandle: number | null = null;
   private isBlipActive = false;
 
+  // Analog Tape Deck Subsystem
+  private recorderNode: ScriptProcessorNode | null = null;
+  private recordedSamples: Float32Array[] = [];
+  private tapeAudioBuffer: AudioBuffer | null = null;
+  private isRecordingTape: boolean = false;
+  private isPlayingTape: boolean = false;
+  private currentTapeSpeed: number = 1.0;
+  private tapeSourceNode: AudioBufferSourceNode | null = null;
+  private tapeRecordedDurationSec: number = 0;
+
   constructor() {
+
     // Audio context is initialized lazily upon user gesture to comply with browser autoplay policies
   }
 
@@ -153,9 +164,10 @@ export class RadioEngine {
   }
 
   public setFrequency(freqMHz: number): void {
-    this.params.frequencyMHz = Math.max(80.0, Math.min(500.0, parseFloat(freqMHz.toFixed(2))));
+    this.params.frequencyMHz = Math.max(80.0, Math.min(520.0, parseFloat(freqMHz.toFixed(2))));
     this.updateAudioLevels();
   }
+
 
   public setFilterType(type: FilterType): void {
     this.params.filterType = type;
@@ -342,7 +354,23 @@ export class RadioEngine {
       const signal = metrics.tunedSignal;
       this.currentSequenceIndex++;
 
-      if (signal.modulation === 'AM_MORSE') {
+      if (signal.id === 'signal-blackout') {
+        // High-speed compressed burst Morse sequence for VOID: ...- --- .. -..
+        const burstSequence = [
+          1,0,1,0,1,0,2, 0,0,  // V
+          2,0,2,0,2,     0,0,  // O
+          1,0,1,         0,0,  // I
+          2,0,1,0,1,     0,0,0,0 // D
+        ];
+        const step = burstSequence[this.currentSequenceIndex % burstSequence.length];
+        this.isBlipActive = step > 0;
+        const gain = step > 0 ? metrics.signalStrength * 0.32 : 0;
+
+        if (this.signalOsc1 && this.signalGain) {
+          this.signalOsc1.frequency.setValueAtTime(1050, this.ctx.currentTime);
+          this.signalGain.gain.setValueAtTime(gain, this.ctx.currentTime);
+        }
+      } else if (signal.modulation === 'AM_MORSE') {
         // Morse sequence for "SOS BASE ECHO"
         const morseSequence = [
           1,0,1,0,1, 0,0, 2,0,2,0,2, 0,0, 1,0,1,0,1, // S O S
@@ -411,7 +439,109 @@ export class RadioEngine {
     }, 140);
   }
 
+  // --- Analog Tape Deck Subsystem Methods ---
+  public startTapeRecording(): boolean {
+    if (!this.ctx || this.isRecordingTape) return false;
+    this.stopTape();
+    this.isRecordingTape = true;
+    this.recordedSamples = [];
+
+    try {
+      this.recorderNode = this.ctx.createScriptProcessor(4096, 1, 1);
+      this.recorderNode.onaudioprocess = (e) => {
+        if (!this.isRecordingTape) return;
+        const input = e.inputBuffer.getChannelData(0);
+        this.recordedSamples.push(new Float32Array(input));
+      };
+      if (this.filterNode) {
+        this.filterNode.connect(this.recorderNode);
+        this.recorderNode.connect(this.ctx.destination);
+      }
+      return true;
+    } catch (err) {
+      console.warn('Tape recording start failed:', err);
+      this.isRecordingTape = false;
+      return false;
+    }
+  }
+
+  public stopTapeRecording(): number {
+    if (!this.isRecordingTape) return this.tapeRecordedDurationSec;
+    this.isRecordingTape = false;
+
+    if (this.recorderNode) {
+      try {
+        this.recorderNode.disconnect();
+      } catch {}
+      this.recorderNode = null;
+    }
+
+    if (this.ctx && this.recordedSamples.length > 0) {
+      const totalLen = this.recordedSamples.reduce((acc, chunk) => acc + chunk.length, 0);
+      this.tapeAudioBuffer = this.ctx.createBuffer(1, totalLen, this.ctx.sampleRate);
+      const outData = this.tapeAudioBuffer.getChannelData(0);
+      let offset = 0;
+      for (const chunk of this.recordedSamples) {
+        outData.set(chunk, offset);
+        offset += chunk.length;
+      }
+      this.tapeRecordedDurationSec = totalLen / this.ctx.sampleRate;
+    }
+    return this.tapeRecordedDurationSec;
+  }
+
+  public playTape(speed = 1.0): boolean {
+    if (!this.ctx || !this.tapeAudioBuffer) return false;
+    this.stopTape();
+    this.currentTapeSpeed = speed;
+
+    try {
+      this.tapeSourceNode = this.ctx.createBufferSource();
+      this.tapeSourceNode.buffer = this.tapeAudioBuffer;
+      this.tapeSourceNode.playbackRate.setValueAtTime(speed, this.ctx.currentTime);
+      this.tapeSourceNode.connect(this.masterGain || this.ctx.destination);
+      this.isPlayingTape = true;
+      this.tapeSourceNode.onended = () => {
+        this.isPlayingTape = false;
+      };
+      this.tapeSourceNode.start();
+      return true;
+    } catch (err) {
+      console.warn('Tape play failed:', err);
+      this.isPlayingTape = false;
+      return false;
+    }
+  }
+
+  public stopTape(): void {
+    if (this.tapeSourceNode) {
+      try {
+        this.tapeSourceNode.stop();
+        this.tapeSourceNode.disconnect();
+      } catch {}
+      this.tapeSourceNode = null;
+    }
+    this.isPlayingTape = false;
+  }
+
+  public getTapeStatus(): {
+    isRecording: boolean;
+    isPlaying: boolean;
+    durationSec: number;
+    speed: number;
+    hasTape: boolean;
+  } {
+    return {
+      isRecording: this.isRecordingTape,
+      isPlaying: this.isPlayingTape,
+      durationSec: Math.round(this.tapeRecordedDurationSec * 10) / 10,
+      speed: this.currentTapeSpeed,
+      hasTape: this.tapeAudioBuffer !== null
+    };
+  }
+
   public destroy(): void {
+    this.stopTape();
     if (this.timerHandle) clearInterval(this.timerHandle);
     if (this.ctx) {
       this.ctx.close();
@@ -419,3 +549,4 @@ export class RadioEngine {
     }
   }
 }
+

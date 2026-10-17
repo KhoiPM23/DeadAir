@@ -81,7 +81,7 @@ btnStartBriefing.addEventListener('click', () => {
 
 // Frequency controls
 function updateFrequency(freq: number): void {
-  const clamped = Math.max(80.0, Math.min(500.0, parseFloat(freq.toFixed(1))));
+  const clamped = Math.max(80.0, Math.min(520.0, parseFloat(freq.toFixed(1))));
   radio.setFrequency(clamped);
   freqSlider.value = clamped.toString();
   freqText.textContent = `${clamped.toFixed(2)} MHz`;
@@ -92,7 +92,7 @@ freqSlider.addEventListener('input', () => {
   updateFrequency(parseFloat(freqSlider.value));
 });
 
-document.querySelectorAll('.btn-step').forEach((btn) => {
+document.querySelectorAll('.btn-step[data-delta]').forEach((btn) => {
   btn.addEventListener('click', () => {
     const delta = btn.getAttribute('data-delta');
     if (delta) {
@@ -100,6 +100,7 @@ document.querySelectorAll('.btn-step').forEach((btn) => {
     }
   });
 });
+
 
 // Filter controls
 document.querySelectorAll('.btn-filter').forEach((btn) => {
@@ -219,17 +220,74 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
+// Analog Tape Deck UI Controls
+const btnTapeRecord = document.getElementById('btnTapeRecord') as HTMLButtonElement | null;
+const btnTapeStop = document.getElementById('btnTapeStop') as HTMLButtonElement | null;
+const btnTapePlay = document.getElementById('btnTapePlay') as HTMLButtonElement | null;
+const tapeStatusText = document.getElementById('tapeStatusText') as HTMLElement | null;
+let currentTapeSpeed = 1.0;
+
+if (btnTapeRecord) {
+  btnTapeRecord.addEventListener('click', () => {
+    radio.startTapeRecording();
+  });
+}
+
+if (btnTapeStop) {
+  btnTapeStop.addEventListener('click', () => {
+    radio.stopTapeRecording();
+    radio.stopTape();
+  });
+}
+
+if (btnTapePlay) {
+  btnTapePlay.addEventListener('click', () => {
+    radio.playTape(currentTapeSpeed);
+  });
+}
+
+document.querySelectorAll('.btn-tape-speed').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.btn-tape-speed').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    const spd = parseFloat(btn.getAttribute('data-speed') || '1.0');
+    currentTapeSpeed = spd;
+    if (radio.getTapeStatus().isPlaying) {
+      radio.playTape(spd);
+    }
+  });
+});
+
 // Render loop at 60fps
 function renderLoop(): void {
   if (!isPaused) {
     const analyser = radio.getAnalyser();
     const metrics = radio.getReceptionMetrics();
     const powerOn = radio.getParams().powerOn;
+    const tapeStatus = radio.getTapeStatus();
 
-    oscRenderer.render(analyser, metrics, powerOn);
+    oscRenderer.render(analyser, metrics, powerOn, tapeStatus);
     updateUnresolvedBadge();
+
+    // Update tape deck status text
+    if (tapeStatusText) {
+      if (tapeStatus.isRecording) {
+        tapeStatusText.textContent = '● RECORDING IN PROGRESS';
+        tapeStatusText.style.color = '#ef4444';
+      } else if (tapeStatus.isPlaying) {
+        tapeStatusText.textContent = `▶ PLAYING AT ${tapeStatus.speed}x SPEED`;
+        tapeStatusText.style.color = '#00ffaa';
+      } else if (tapeStatus.hasTape) {
+        tapeStatusText.textContent = `TAPE READY [${tapeStatus.durationSec}s RECORDED]`;
+        tapeStatusText.style.color = '#f59e0b';
+      } else {
+        tapeStatusText.textContent = 'NO TAPE CAPTURED';
+        tapeStatusText.style.color = '#94a3b8';
+      }
+    }
   }
   requestAnimationFrame(renderLoop);
 }
 
 requestAnimationFrame(renderLoop);
+

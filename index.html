@@ -473,10 +473,10 @@
 
           <div class="slider-row">
             <label>
-              <span>VHF / UHF BAND SCANNER (80 - 500 MHz)</span>
+              <span>VHF / UHF BAND SCANNER (80 - 520 MHz)</span>
               <span id="sliderVal">100.0 MHz</span>
             </label>
-            <input type="range" id="freqSlider" min="80.0" max="500.0" step="0.1" value="100.0">
+            <input type="range" id="freqSlider" min="80.0" max="520.0" step="0.1" value="100.0">
           </div>
 
           <div class="filter-selector-row">
@@ -511,6 +511,28 @@
               <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.8">
             </div>
           </div>
+
+          <!-- Analog Reel-to-Reel Tape Deck Module -->
+          <div class="tape-deck-panel" style="margin-top: 10px; background: #090e18; border: 1px solid #1e2e44; border-radius: 6px; padding: 10px 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 10px; color: #f59e0b; font-weight: bold; letter-spacing: 1px;">ANALOG TAPE RECORDER // CASSETTE DECK</span>
+              <span id="tapeStatusText" style="font-size: 9px; color: #94a3b8;">NO TAPE LOADED</span>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+              <div style="display: flex; gap: 6px;">
+                <button id="btnTapeRecord" class="btn-step" style="border-color: #ef4444; color: #ef4444;">● REC</button>
+                <button id="btnTapeStop" class="btn-step">■ STOP</button>
+                <button id="btnTapePlay" class="btn-step" style="border-color: #00ffaa; color: #00ffaa;">▶ PLAY</button>
+              </div>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <span style="font-size: 9px; color: #64748b;">SPEED:</span>
+                <button class="btn-step btn-tape-speed" data-speed="0.25">0.25x</button>
+                <button class="btn-step btn-tape-speed" data-speed="0.5">0.5x</button>
+                <button class="btn-step btn-tape-speed active" data-speed="1.0">1.0x</button>
+                <button class="btn-step btn-tape-speed" data-speed="2.0">2.0x</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -518,6 +540,7 @@
       <div class="dossier-section">
         <div class="dossier-title">
           <span>FIELD DOSSIER // CLASSIFIED SIGNALS</span>
+
           <span id="unresolvedBadge" style="font-size: 11px; color: #00e5ff;">4 UNRESOLVED FREQUENCIES</span>
         </div>
         <div id="signalsList" style="display: flex; flex-direction: column; gap: 10px;"></div>
@@ -586,13 +609,14 @@
   <!-- All Mystery Solved Modal -->
   <div id="modalVictory" class="modal-backdrop hidden">
     <div class="modal-box">
-      <h2 style="color: #00ffaa; font-size: 22px;">ALL 4 SIGNALS DECIPHERED // EXTRACTION DISPATCHED</h2>
+      <h2 style="color: #00ffaa; font-size: 22px;">ALL 5 CLASSIFIED SIGNALS DECIPHERED // EXTRACTION DISPATCHED</h2>
       <p style="color: #cbd5e1; font-size: 12px; line-height: 1.6; text-align: left;">
         Your intelligence synthesis has reconstructed the full incident timeline:<br><br>
-        <strong>1. Outpost Echo</strong> confirmed initial emergency evacuation.<br>
-        <strong>2. Passcode 7391</strong> bypassed the relay station jammer.<br>
-        <strong>3. Bunker Nexus</strong> unsealed subterranean command records.<br>
-        <strong>4. Project ICARUS</strong> orbital telemetry acquired.
+        <strong>1. Outpost Echo:</strong> Confirmed initial emergency distress beacon.<br>
+        <strong>2. Passcode 7391:</strong> Low-pass filter de-hissed the relay station cipher.<br>
+        <strong>3. Bunker Nexus:</strong> Notch filter eliminated resonant squeal to unseal records.<br>
+        <strong>4. Project ICARUS:</strong> Real-time spectral waterfall telemetry decoded.<br>
+        <strong>5. Operation VOID:</strong> Analog tape deck slowed 4x burst numbers station.
       </p>
       <div style="background: rgba(0, 255, 170, 0.1); border: 1px solid #00ffaa; border-radius: 4px; padding: 8px; font-size: 11px; color: #00ffaa;">
         EXTRACTION CHOPPER INBOUND: COORDINATES 45.2°N, 12.8°E
@@ -602,6 +626,7 @@
       </button>
     </div>
   </div>
+
 
   <script type="module" src="/src/main.ts"></script>
 </body>

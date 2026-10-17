@@ -105,7 +105,17 @@ describe('DeadAir Audio Reception & Solution Validation', () => {
     expect(l4).toBe(3);
   });
 
-  it('should validate all 4 mystery solutions and trigger victory', () => {
+  it('should lock carrier for Classified Numbers Station (502.4 MHz)', () => {
+    const radio = new RadioEngine();
+    radio.setFrequency(502.4);
+
+    const metrics = radio.getReceptionMetrics();
+    expect(metrics.tunedSignal).not.toBeNull();
+    expect(metrics.tunedSignal?.id).toBe('signal-blackout');
+    expect(metrics.signalStrength).toBeCloseTo(1.0, 1);
+  });
+
+  it('should validate all 5 mystery solutions and trigger victory', () => {
     let allSolved = false;
     const notebook = new NotebookManager(() => {
       allSolved = true;
@@ -131,7 +141,12 @@ describe('DeadAir Audio Reception & Solution Validation', () => {
     expect(notebook.checkSolution('signal-icarus', 'ICARUS')).toBe(true);
     expect(notebook.getSolvedCount()).toBe(4);
 
+    // Solve signal 5: Blackout Numbers Station VOID
+    expect(notebook.checkSolution('signal-blackout', 'VOID')).toBe(true);
+    expect(notebook.getSolvedCount()).toBe(5);
+
     expect(notebook.isAllSolved()).toBe(true);
     expect(allSolved).toBe(true);
   });
 });
+

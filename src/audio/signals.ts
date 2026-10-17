@@ -76,5 +76,23 @@ export const MYSTERY_SIGNALS: MysterySignal[] = [
     ],
     solutionKey: 'Project Codename',
     expectedInput: 'ICARUS'
+  },
+  {
+    id: 'signal-blackout',
+    name: 'CHANNEL 5: CLASSIFIED TAPE-BURST NUMBERS STATION',
+    frequencyMHz: 502.4,
+    bandwidthMHz: 0.8,
+    modulation: 'AM_MORSE',
+    source: 'Phantom Deep-Range Transmitter 99',
+    morseText: 'VOID',
+    clueHint: 'A rapid high-speed burst broadcast intercepted at 502.4 MHz. Use the ANALOG TAPE DECK to RECORD the signal, then playback at 0.25x SLOW SPEED to decipher the 4-letter NATO callsign.',
+    hints: [
+      'The transmission is broadcast at 4x normal human speed, sounding like a high-speed chirp near 502.4 MHz.',
+      'Press RECORD [REC] on the tape deck while tuned to 502.4 MHz to capture the transmission into the audio tape buffer.',
+      'Switch playback speed to 0.25x (SLOW) to clearly hear the 4 distinct Morse letters: ...- (V), --- (O), .. (I), -.. (D) = VOID.'
+    ],
+    solutionKey: 'Phantom Callsign',
+    expectedInput: 'VOID'
   }
 ];
+

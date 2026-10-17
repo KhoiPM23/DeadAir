@@ -1,5 +1,13 @@
 import { ReceptionMetrics } from '../audio/types';
 
+export interface TapeStatusInfo {
+  isRecording: boolean;
+  isPlaying: boolean;
+  durationSec: number;
+  speed: number;
+  hasTape: boolean;
+}
+
 export class OscilloscopeRenderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -44,6 +52,13 @@ export class OscilloscopeRenderer {
     [0,0,0,0,0,0,0]
   ];
 
+  // Analog VU meter physics state
+  private needlePos: number = 0;
+  private needleVelocity: number = 0;
+
+  // Tape reel animation angle
+  private reelRotation: number = 0;
+
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     const context = canvas.getContext('2d');
@@ -53,7 +68,7 @@ export class OscilloscopeRenderer {
     // Offscreen scrolling canvas for waterfall
     this.waterfallCanvas = document.createElement('canvas');
     this.waterfallCanvas.width = canvas.width;
-    this.waterfallCanvas.height = 190;
+    this.waterfallCanvas.height = 185;
     const wCtx = this.waterfallCanvas.getContext('2d');
     if (!wCtx) throw new Error('No 2D context for waterfall buffer');
     this.waterfallCtx = wCtx;
@@ -64,24 +79,37 @@ export class OscilloscopeRenderer {
     this.freqData = new Uint8Array(512);
   }
 
-  public render(analyser: AnalyserNode | null, metrics: ReceptionMetrics, powerOn: boolean): void {
+  public render(
+    analyser: AnalyserNode | null,
+    metrics: ReceptionMetrics,
+    powerOn: boolean,
+    tapeStatus?: TapeStatusInfo
+  ): void {
     const { ctx } = this;
     const width = this.canvas.width;
     const height = this.canvas.height;
 
-    // CRT Bezel background
+    // Update tape animation
+    if (tapeStatus && (tapeStatus.isRecording || tapeStatus.isPlaying)) {
+      const speedMult = tapeStatus.speed || 1.0;
+      this.reelRotation += 0.08 * speedMult;
+    }
+
+    // 1. CRT Curved Bezel Outer Frame
     ctx.fillStyle = '#05090f';
     ctx.fillRect(0, 0, width, height);
 
     if (!powerOn) {
-      ctx.fillStyle = '#0f1722';
-      ctx.font = '13px monospace';
+      ctx.fillStyle = '#0b111a';
+      ctx.fillRect(0, 0, width, height);
+      ctx.fillStyle = '#1e293b';
+      ctx.font = 'bold 13px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('STANDBY // SYSTEM POWER DEACTIVATED', width / 2, height / 2);
+      ctx.fillText('STANDBY // RACK RECEIVER DEACTIVATED', width / 2, height / 2 - 8);
       ctx.fillStyle = '#64748b';
       ctx.font = '10px monospace';
-      ctx.fillText('CLICK POWER BUTTON TO INITIALIZE RECEIVER RACK', width / 2, height / 2 + 22);
-      this.drawScanlines(ctx, width, height);
+      ctx.fillText('PRESS POWER [POWER] BUTTON TO INITIALIZE VACUUM TUBES & DSP', width / 2, height / 2 + 16);
+      this.drawCRTOverlay(ctx, width, height);
       return;
     }
 
@@ -90,24 +118,34 @@ export class OscilloscopeRenderer {
       analyser.getByteFrequencyData(this.freqData);
     }
 
-    // 1. Draw Waterfall Spectrogram (Top portion: y 0..190)
+    // 2. Draw Waterfall Spectrogram (Top half: y 0..185)
     this.updateWaterfall(metrics);
     ctx.drawImage(this.waterfallCanvas, 0, 0);
 
-    // Divider line
-    ctx.strokeStyle = '#1e293b';
+    // Divider line between Waterfall and Oscilloscope
+    ctx.strokeStyle = '#1e2d42';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(0, 190);
-    ctx.lineTo(width, 190);
+    ctx.moveTo(0, 185);
+    ctx.lineTo(width, 185);
     ctx.stroke();
 
-    // 2. Draw Phosphor Oscilloscope (Bottom portion: y 190..360)
+    // 3. Draw Phosphor Oscilloscope (Bottom half: y 185..360)
     this.drawOscilloscopeWaveform(width, height);
 
-    // 3. CRT Scanline overlay, Reticle & Metrics
+    // 4. Draw Analog Galvanometer VU Meter
+    this.drawAnalogVUMeter(width - 150, height - 85, 138, 72, metrics);
+
+    // 5. Draw Analog Tape Reel Monitor (if active)
+    if (tapeStatus) {
+      this.drawTapeReelMonitor(width - 240, 24, 76, 42, tapeStatus);
+    }
+
+    // 6. Reticles, Badges, Carrier Pulse LED
     this.drawReticleAndMetrics(width, height, metrics);
-    this.drawScanlines(ctx, width, height);
+
+    // 7. CRT Scanlines & Curved Screen Vignette
+    this.drawCRTOverlay(ctx, width, height);
   }
 
   private updateWaterfall(metrics: ReceptionMetrics): void {
@@ -164,35 +202,36 @@ export class OscilloscopeRenderer {
 
   private drawOscilloscopeWaveform(width: number, height: number): void {
     const { ctx } = this;
-    const oscYCenter = 275;
-    const oscHeight = 70;
+    const oscYCenter = 270;
+    const oscHeight = 65;
 
-    // Grid lines for oscilloscope
-    ctx.strokeStyle = 'rgba(0, 255, 136, 0.08)';
+    // Reticle Grid lines
+    ctx.strokeStyle = 'rgba(0, 255, 136, 0.07)';
     ctx.lineWidth = 1;
-    for (let y = 200; y < height - 10; y += 20) {
+    for (let y = 195; y < height - 10; y += 18) {
       ctx.beginPath();
       ctx.moveTo(10, y);
-      ctx.lineTo(width - 10, y);
+      ctx.lineTo(width - 165, y);
       ctx.stroke();
     }
-    for (let x = 10; x < width - 10; x += 40) {
+    for (let x = 10; x < width - 165; x += 36) {
       ctx.beginPath();
-      ctx.moveTo(x, 200);
+      ctx.moveTo(x, 195);
       ctx.lineTo(x, height - 10);
       ctx.stroke();
     }
 
-    // Phosphor green wave
+    // Phosphor green wave with multi-pass glow
     ctx.save();
     ctx.strokeStyle = '#00ff88';
     ctx.shadowColor = '#00ff88';
-    ctx.shadowBlur = 8;
-    ctx.lineWidth = 2;
+    ctx.shadowBlur = 10;
+    ctx.lineWidth = 2.2;
     ctx.beginPath();
 
-    const sliceWidth = width / this.timeData.length;
-    let x = 0;
+    const maxRenderW = width - 165;
+    const sliceWidth = maxRenderW / this.timeData.length;
+    let x = 10;
 
     for (let i = 0; i < this.timeData.length; i++) {
       const v = this.timeData[i] / 128.0; // 0..2
@@ -210,28 +249,176 @@ export class OscilloscopeRenderer {
     ctx.restore();
   }
 
+  private drawAnalogVUMeter(x: number, y: number, w: number, h: number, metrics: ReceptionMetrics): void {
+    const { ctx } = this;
+    ctx.save();
+
+    // Meter Dial Background (Warm analog meter)
+    ctx.fillStyle = '#0a1017';
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = '#27384e';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x, y, w, h);
+
+    // Meter scale arc
+    const pivotX = x + w / 2;
+    const pivotY = y + h + 18;
+    const arcR = h * 0.95;
+
+    ctx.strokeStyle = '#64748b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(pivotX, pivotY, arcR, -Math.PI * 0.75, -Math.PI * 0.25);
+    ctx.stroke();
+
+    // Red zone (> 0dB)
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(pivotX, pivotY, arcR, -Math.PI * 0.38, -Math.PI * 0.25);
+    ctx.stroke();
+
+    // Scale ticks
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '8px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('SIGNAL VU', pivotX, y + 16);
+    ctx.fillText('-20', x + 18, y + 36);
+    ctx.fillText('0dB', x + w - 24, y + 36);
+
+    // Spring damping needle simulation
+    const targetAngle = -Math.PI * 0.75 + metrics.signalStrength * (Math.PI * 0.5);
+    const jitter = metrics.signalStrength < 0.2 ? (Math.random() - 0.5) * 0.04 : 0;
+    const force = (targetAngle + jitter - this.needlePos) * 0.2;
+    this.needleVelocity = this.needleVelocity * 0.78 + force;
+    this.needlePos += this.needleVelocity;
+
+    // Draw Galvanometer Needle
+    ctx.strokeStyle = metrics.signalStrength > 0.8 ? '#ef4444' : '#00ffaa';
+    ctx.lineWidth = 1.8;
+    ctx.shadowColor = ctx.strokeStyle;
+    ctx.shadowBlur = 4;
+    ctx.beginPath();
+    ctx.moveTo(pivotX, pivotY);
+    ctx.lineTo(
+      pivotX + Math.cos(this.needlePos) * arcR,
+      pivotY + Math.sin(this.needlePos) * arcR
+    );
+    ctx.stroke();
+
+    // Pivot cap
+    ctx.fillStyle = '#334155';
+    ctx.beginPath();
+    ctx.arc(pivotX, pivotY, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  private drawTapeReelMonitor(x: number, y: number, w: number, h: number, tape: TapeStatusInfo): void {
+    const { ctx } = this;
+    ctx.save();
+
+    // Tape Deck Monitor Bezel
+    ctx.fillStyle = '#080d14';
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, w, h);
+
+    const r1X = x + 20;
+    const r2X = x + w - 20;
+    const rY = y + h / 2;
+    const rRad = 12;
+
+    // Tape connecting band
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(r1X, rY + rRad);
+    ctx.lineTo(r2X, rY + rRad);
+    ctx.stroke();
+
+    // Draw Left and Right Reels with spokes
+    [r1X, r2X].forEach((rx) => {
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.arc(rx, rY, rRad, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Spinning 3-spoke reel
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 1.2;
+      for (let s = 0; s < 3; s++) {
+        const ang = this.reelRotation + (s * Math.PI * 2) / 3;
+        ctx.beginPath();
+        ctx.moveTo(rx, rY);
+        ctx.lineTo(rx + Math.cos(ang) * (rRad - 2), rY + Math.sin(ang) * (rRad - 2));
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(rx, rY, 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Recording / Playing Status LED
+    if (tape.isRecording) {
+      ctx.fillStyle = '#ef4444';
+      ctx.shadowColor = '#ef4444';
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.arc(x + w / 2, y + 8, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ef4444';
+      ctx.font = 'bold 8px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('● REC', x + w / 2, y + 22);
+    } else if (tape.isPlaying) {
+      ctx.fillStyle = '#00ffaa';
+      ctx.shadowColor = '#00ffaa';
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.arc(x + w / 2, y + 8, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#00ffaa';
+      ctx.font = 'bold 8px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`▶ ${tape.speed}x`, x + w / 2, y + 22);
+    } else {
+      ctx.fillStyle = '#64748b';
+      ctx.font = '8px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(tape.hasTape ? `${tape.durationSec}s TAPE` : 'NO TAPE', x + w / 2, y + 22);
+    }
+
+    ctx.restore();
+  }
+
   private drawReticleAndMetrics(width: number, height: number, metrics: ReceptionMetrics): void {
     const { ctx } = this;
 
     // Top Section Labels
     ctx.fillStyle = '#00e5ff';
-    ctx.font = '10px monospace';
+    ctx.font = 'bold 10px monospace';
     ctx.textAlign = 'left';
     ctx.fillText('WATERFALL SPECTROGRAM [0 - 5.0 kHz]', 12, 16);
-    ctx.fillText('TIME-DOMAIN PHOSPHOR OSCILLOSCOPE', 12, 206);
+    ctx.fillText('TIME-DOMAIN PHOSPHOR OSCILLOSCOPE', 12, 204);
 
-    // Optical Signal Indicator LED (for hearing-impaired accessibility)
-    const ledX = width - 18;
-    const ledY = 203;
+    // Optical Signal Indicator LED
+    const ledX = width - 20;
+    const ledY = 202;
     ctx.beginPath();
     ctx.arc(ledX, ledY, 5, 0, Math.PI * 2);
     if (metrics.isSignalBlipActive) {
       ctx.fillStyle = '#00ff88';
       ctx.shadowColor = '#00ff88';
-      ctx.shadowBlur = 10;
+      ctx.shadowBlur = 12;
       ctx.fill();
       ctx.shadowBlur = 0;
       ctx.fillStyle = '#00ff88';
+      ctx.font = 'bold 9px monospace';
       ctx.textAlign = 'right';
       ctx.fillText('CARRIER PULSE [ACTIVE]', ledX - 10, ledY + 3);
     } else {
@@ -243,44 +430,45 @@ export class OscilloscopeRenderer {
     ctx.textAlign = 'right';
     if (metrics.tunedSignal && metrics.signalStrength > 0.2) {
       ctx.fillStyle = '#00ff88';
+      ctx.font = 'bold 10px monospace';
       ctx.fillText(`SIGNAL LOCK: ${metrics.tunedSignal.name} (${metrics.signalToNoiseRatio} dB SNR)`, width - 12, 16);
 
       // Filter status alert badge on CRT
       ctx.textAlign = 'left';
       if (metrics.isFilterOptimal) {
         ctx.fillStyle = '#00ff88';
-        ctx.fillText('✓ FILTER ENVELOPE OPTIMAL', 12, 345);
+        ctx.fillText('✓ FILTER ENVELOPE OPTIMAL', 12, height - 12);
       } else {
         ctx.fillStyle = '#f59e0b';
-        ctx.fillText('⚠ HIGH INTERFERENCE // ADJUST FILTER', 12, 345);
+        ctx.fillText('⚠ HIGH INTERFERENCE // ADJUST BIQUAD FILTER', 12, height - 12);
       }
     } else {
       ctx.fillStyle = '#64748b';
-      ctx.fillText('NO CARRIER // STATIC NOISE', width - 12, 16);
+      ctx.font = '10px monospace';
+      ctx.fillText('NO CARRIER // AMBIENT STATIC', width - 12, 16);
     }
-
-    // Signal strength bar (VU Meter in CRT corner)
-    const meterX = width - 150;
-    const meterY = height - 20;
-    const meterW = 138;
-    const meterH = 8;
-
-    ctx.fillStyle = '#1e293b';
-    ctx.fillRect(meterX, meterY, meterW, meterH);
-    ctx.fillStyle = metrics.signalStrength > 0.7 ? '#00ff88' : '#00e5ff';
-    ctx.fillRect(meterX, meterY, meterW * metrics.signalStrength, meterH);
-    ctx.strokeStyle = '#334155';
-    ctx.strokeRect(meterX, meterY, meterW, meterH);
-
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '9px monospace';
-    ctx.fillText(`RSSI: ${(metrics.signalStrength * 100).toFixed(0)}%`, meterX - 8, meterY + 7);
   }
 
-  private drawScanlines(ctx: CanvasRenderingContext2D, width: number, height: number): void {
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+  private drawCRTOverlay(ctx: CanvasRenderingContext2D, width: number, height: number): void {
+    // Scanlines
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.16)';
     for (let y = 0; y < height; y += 3) {
-      ctx.fillRect(0, y, width, 1);
+      ctx.fillRect(0, y, width, 1.2);
     }
+
+    // Glass Screen Curved Vignette Shadow
+    const grad = ctx.createRadialGradient(
+      width / 2, height / 2, Math.min(width, height) * 0.45,
+      width / 2, height / 2, Math.max(width, height) * 0.72
+    );
+    grad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0.55)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+
+    // Subtle Glass Screen Border
+    ctx.strokeStyle = 'rgba(30, 48, 70, 0.6)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(1, 1, width - 2, height - 2);
   }
 }
