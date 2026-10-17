@@ -269,6 +269,17 @@ window.addEventListener('keydown', (e) => {
     return;
   }
 
+  // Preset Channels [1]..[5]
+  const isInputActive = ['input', 'textarea'].includes((e.target as HTMLElement)?.tagName?.toLowerCase());
+  if (!isInputActive && e.key >= '1' && e.key <= '5') {
+    const idx = parseInt(e.key, 10) - 1;
+    if (idx < MYSTERY_SIGNALS.length) {
+      e.preventDefault();
+      updateFrequency(MYSTERY_SIGNALS[idx].frequencyMHz);
+      return;
+    }
+  }
+
   // Quick tune to nearest signal with Space
   if (e.code === 'Space') {
     e.preventDefault();
