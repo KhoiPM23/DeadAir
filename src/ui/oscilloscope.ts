@@ -8,11 +8,14 @@ export interface TapeStatusInfo {
   hasTape: boolean;
 }
 
+export type PhosphorTheme = 'GREEN' | 'AMBER' | 'CYAN' | 'SILVER';
+
 export class OscilloscopeRenderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private waterfallCanvas: HTMLCanvasElement;
   private waterfallCtx: CanvasRenderingContext2D;
+  private theme: PhosphorTheme = 'GREEN';
 
   private timeData: Uint8Array<ArrayBuffer>;
   private freqData: Uint8Array<ArrayBuffer>;
@@ -77,6 +80,30 @@ export class OscilloscopeRenderer {
 
     this.timeData = new Uint8Array(512);
     this.freqData = new Uint8Array(512);
+  }
+
+  public setTheme(theme: PhosphorTheme): void {
+    this.theme = theme;
+  }
+
+  public getTheme(): PhosphorTheme {
+    return this.theme;
+  }
+
+  public getThemeName(): string {
+    switch (this.theme) {
+      case 'GREEN': return 'CRT: P24 GREEN';
+      case 'AMBER': return 'CRT: P39 AMBER';
+      case 'CYAN': return 'CRT: CRYPTIC CYAN';
+      case 'SILVER': return 'CRT: P4 SILVER';
+    }
+  }
+
+  public cycleTheme(): PhosphorTheme {
+    const themes: PhosphorTheme[] = ['GREEN', 'AMBER', 'CYAN', 'SILVER'];
+    const nextIdx = (themes.indexOf(this.theme) + 1) % themes.length;
+    this.theme = themes[nextIdx];
+    return this.theme;
   }
 
   public render(
@@ -179,10 +206,26 @@ export class OscilloscopeRenderer {
         }
       }
 
-      // Amber / Cyan thermal heatmap palette
-      const r = intensity > 160 ? 255 : intensity * 1.25;
-      const g = intensity > 80 ? intensity : intensity * 0.55;
-      const b = intensity > 200 ? 230 : intensity * 0.35;
+      // Theme-specific thermal heatmap palette
+      let r = 0, g = 0, b = 0;
+      if (this.theme === 'GREEN') {
+        r = intensity > 200 ? 120 : 0;
+        g = Math.min(255, Math.floor(intensity * 1.25));
+        b = intensity > 180 ? 80 : 0;
+      } else if (this.theme === 'AMBER') {
+        r = Math.min(255, Math.floor(intensity * 1.35));
+        g = Math.floor(intensity * 0.65);
+        b = Math.floor(intensity * 0.08);
+      } else if (this.theme === 'CYAN') {
+        r = intensity > 220 ? 160 : Math.floor(intensity * 0.2);
+        g = Math.min(255, Math.floor(intensity * 0.9));
+        b = Math.min(255, Math.floor(intensity * 1.25));
+      } else {
+        // SILVER
+        r = intensity;
+        g = intensity;
+        b = intensity;
+      }
 
       const idx0 = x * 4;
       data[idx0] = r;
@@ -205,8 +248,26 @@ export class OscilloscopeRenderer {
     const oscYCenter = 270;
     const oscHeight = 65;
 
+    let strokeColor = '#00ff88';
+    let glowColor = '#00ff88';
+    let gridColor = 'rgba(0, 255, 136, 0.07)';
+
+    if (this.theme === 'AMBER') {
+      strokeColor = '#ffaa00';
+      glowColor = '#ff6600';
+      gridColor = 'rgba(255, 170, 0, 0.07)';
+    } else if (this.theme === 'CYAN') {
+      strokeColor = '#00e5ff';
+      glowColor = '#00e5ff';
+      gridColor = 'rgba(0, 229, 255, 0.07)';
+    } else if (this.theme === 'SILVER') {
+      strokeColor = '#f1f5f9';
+      glowColor = '#94a3b8';
+      gridColor = 'rgba(241, 245, 249, 0.07)';
+    }
+
     // Reticle Grid lines
-    ctx.strokeStyle = 'rgba(0, 255, 136, 0.07)';
+    ctx.strokeStyle = gridColor;
     ctx.lineWidth = 1;
     for (let y = 195; y < height - 10; y += 18) {
       ctx.beginPath();
@@ -221,10 +282,10 @@ export class OscilloscopeRenderer {
       ctx.stroke();
     }
 
-    // Phosphor green wave with multi-pass glow
+    // Phosphor wave with multi-pass glow
     ctx.save();
-    ctx.strokeStyle = '#00ff88';
-    ctx.shadowColor = '#00ff88';
+    ctx.strokeStyle = strokeColor;
+    ctx.shadowColor = glowColor;
     ctx.shadowBlur = 10;
     ctx.lineWidth = 2.2;
     ctx.beginPath();
@@ -399,8 +460,13 @@ export class OscilloscopeRenderer {
   private drawReticleAndMetrics(width: number, height: number, metrics: ReceptionMetrics): void {
     const { ctx } = this;
 
+    let accentColor = '#00ff88';
+    if (this.theme === 'AMBER') accentColor = '#ffaa00';
+    else if (this.theme === 'CYAN') accentColor = '#00e5ff';
+    else if (this.theme === 'SILVER') accentColor = '#f1f5f9';
+
     // Top Section Labels
-    ctx.fillStyle = '#00e5ff';
+    ctx.fillStyle = accentColor;
     ctx.font = 'bold 10px monospace';
     ctx.textAlign = 'left';
     ctx.fillText('WATERFALL SPECTROGRAM [0 - 5.0 kHz]', 12, 16);
@@ -412,12 +478,12 @@ export class OscilloscopeRenderer {
     ctx.beginPath();
     ctx.arc(ledX, ledY, 5, 0, Math.PI * 2);
     if (metrics.isSignalBlipActive) {
-      ctx.fillStyle = '#00ff88';
-      ctx.shadowColor = '#00ff88';
+      ctx.fillStyle = accentColor;
+      ctx.shadowColor = accentColor;
       ctx.shadowBlur = 12;
       ctx.fill();
       ctx.shadowBlur = 0;
-      ctx.fillStyle = '#00ff88';
+      ctx.fillStyle = accentColor;
       ctx.font = 'bold 9px monospace';
       ctx.textAlign = 'right';
       ctx.fillText('CARRIER PULSE [ACTIVE]', ledX - 10, ledY + 3);
@@ -429,14 +495,14 @@ export class OscilloscopeRenderer {
     // Tuned signal HUD badge
     ctx.textAlign = 'right';
     if (metrics.tunedSignal && metrics.signalStrength > 0.2) {
-      ctx.fillStyle = '#00ff88';
+      ctx.fillStyle = accentColor;
       ctx.font = 'bold 10px monospace';
       ctx.fillText(`SIGNAL LOCK: ${metrics.tunedSignal.name} (${metrics.signalToNoiseRatio} dB SNR)`, width - 12, 16);
 
       // Filter status alert badge on CRT
       ctx.textAlign = 'left';
       if (metrics.isFilterOptimal) {
-        ctx.fillStyle = '#00ff88';
+        ctx.fillStyle = accentColor;
         ctx.fillText('✓ FILTER ENVELOPE OPTIMAL', 12, height - 12);
       } else {
         ctx.fillStyle = '#f59e0b';

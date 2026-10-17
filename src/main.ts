@@ -28,6 +28,13 @@ const btnMorseRef = document.getElementById('btnMorseRef') as HTMLButtonElement;
 const modalMorse = document.getElementById('modalMorse') as HTMLElement;
 const btnCloseMorse = document.getElementById('btnCloseMorse') as HTMLButtonElement;
 
+const btnTheme = document.getElementById('btnTheme') as HTMLButtonElement | null;
+const themeLabel = document.getElementById('themeLabel') as HTMLElement | null;
+const btnDossiers = document.getElementById('btnDossiers') as HTMLButtonElement | null;
+const modalDossier = document.getElementById('modalDossier') as HTMLElement | null;
+const btnCloseDossier = document.getElementById('btnCloseDossier') as HTMLButtonElement | null;
+const dossierList = document.getElementById('dossierList') as HTMLElement | null;
+
 const modalBriefing = document.getElementById('modalBriefing') as HTMLElement;
 const btnStartBriefing = document.getElementById('btnStartBriefing') as HTMLButtonElement;
 
@@ -154,6 +161,75 @@ btnMute.addEventListener('click', toggleMute);
 btnPause.addEventListener('click', togglePause);
 btnResumeGame.addEventListener('click', togglePause);
 
+// Theme switching
+function handleCycleTheme(): void {
+  oscRenderer.cycleTheme();
+  if (themeLabel) {
+    themeLabel.textContent = oscRenderer.getThemeName();
+  }
+}
+
+btnTheme?.addEventListener('click', handleCycleTheme);
+
+// Classified Dossiers
+function openDossierModal(): void {
+  if (!dossierList || !modalDossier) return;
+  dossierList.innerHTML = '';
+
+  const dossierLore: Record<string, { title: string; clearance: string; text: string }> = {
+    'signal-echo': {
+      title: 'OUTPOST ECHO // EMERGENCY BEACON',
+      clearance: 'SECRET',
+      text: 'Outpost Echo personnel abandoned installation following the severe 1987 geomagnetic storm. Automated distress transmitter continues repeating callsign ECHO on 124.5 MHz.'
+    },
+    'signal-7391': {
+      title: 'STATION 7391 // SUBTERRANEAN ARCTIC CORE',
+      clearance: 'TOP SECRET',
+      text: 'Subterranean coolant breach occurred at 02:45. Cryogenic containment protocol COLD was broadcast over 285.4 MHz before primary communications mast froze.'
+    },
+    'signal-nexus': {
+      title: 'PROJECT NEXUS // QUANTUM TRANSCEIVER',
+      clearance: 'RESTRICTED',
+      text: 'Experimental autonomous relay array. Neural node operating without human supervision on 340.8 MHz. Termination code OMEGA verified.'
+    },
+    'signal-icarus': {
+      title: 'PROBE ICARUS // SOLAR ORBITAL TELEMETRY',
+      clearance: 'CONFIDENTIAL',
+      text: 'Deep space telemetry probe entered eccentric solar orbit. Attitude control thrusters depleted. Steganographic waterfall broadcast confirmed status ORBIT.'
+    },
+    'signal-blackout': {
+      title: 'OPERATION VOID // CLOAKED OBSERVATORY',
+      clearance: 'EYES ONLY',
+      text: 'High-frequency 4x audio burst intercepted at 502.4 MHz. Slow-speed tape analysis decoded distress cipher VOID. Void anomaly containment status: UNKNOWN.'
+    }
+  };
+
+  MYSTERY_SIGNALS.forEach(sig => {
+    const isSolved = notebook.isSignalSolved(sig.id);
+    const card = document.createElement('div');
+    card.style.cssText = `background: #090f18; border: 1px solid ${isSolved ? '#00ffaa' : '#334155'}; border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 4px;`;
+    const lore = dossierLore[sig.id] || { title: sig.name, clearance: 'UNCLASSIFIED', text: sig.clueHint };
+
+    card.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: 700; color: ${isSolved ? '#00ffaa' : '#64748b'};">${lore.title}</span>
+        <span style="font-size: 9px; padding: 2px 6px; border-radius: 3px; background: ${isSolved ? 'rgba(0,255,170,0.15)' : 'rgba(255,255,255,0.05)'}; color: ${isSolved ? '#00ffaa' : '#64748b'};">[${isSolved ? lore.clearance : 'ENCRYPTED'}]</span>
+      </div>
+      <div style="font-size: 10px; color: ${isSolved ? '#cbd5e1' : '#475569'}; line-height: 1.4;">
+        ${isSolved ? lore.text : '/// INTELLIGENCE REDACTED /// Solve signal cipher in the evidence notebook to decrypt classified military memorandum.'}
+      </div>
+    `;
+    dossierList.appendChild(card);
+  });
+
+  modalDossier.classList.remove('hidden');
+}
+
+btnDossiers?.addEventListener('click', openDossierModal);
+btnCloseDossier?.addEventListener('click', () => {
+  modalDossier?.classList.add('hidden');
+});
+
 // Modals
 btnMorseRef.addEventListener('click', () => {
   modalMorse.classList.remove('hidden');
@@ -171,6 +247,12 @@ btnRestartDossier.addEventListener('click', () => {
 
 // Global Keyboard Navigation
 window.addEventListener('keydown', (e) => {
+  // Theme cycle [C]
+  if (e.key === 'c' || e.key === 'C') {
+    e.preventDefault();
+    handleCycleTheme();
+    return;
+  }
   // Pause
   if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
     e.preventDefault();

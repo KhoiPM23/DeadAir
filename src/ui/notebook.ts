@@ -60,6 +60,10 @@ export class NotebookManager {
     return this.solvedSignals.size;
   }
 
+  public isSignalSolved(signalId: string): boolean {
+    return this.solvedSignals.has(signalId);
+  }
+
   public getTotalCount(): number {
     return MYSTERY_SIGNALS.length;
   }

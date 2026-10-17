@@ -147,6 +147,14 @@ describe('DeadAir Audio Reception & Solution Validation', () => {
 
     expect(notebook.isAllSolved()).toBe(true);
     expect(allSolved).toBe(true);
+
+    // Verify per-signal solved status for dossier archive
+    expect(notebook.isSignalSolved('signal-echo')).toBe(true);
+    expect(notebook.isSignalSolved('signal-omega')).toBe(true);
+    expect(notebook.isSignalSolved('signal-nexus')).toBe(true);
+    expect(notebook.isSignalSolved('signal-icarus')).toBe(true);
+    expect(notebook.isSignalSolved('signal-blackout')).toBe(true);
+    expect(notebook.isSignalSolved('non-existent')).toBe(false);
   });
 });
 
