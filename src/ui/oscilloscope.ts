@@ -53,7 +53,7 @@ export class OscilloscopeRenderer {
     // Offscreen scrolling canvas for waterfall
     this.waterfallCanvas = document.createElement('canvas');
     this.waterfallCanvas.width = canvas.width;
-    this.waterfallCanvas.height = 200;
+    this.waterfallCanvas.height = 190;
     const wCtx = this.waterfallCanvas.getContext('2d');
     if (!wCtx) throw new Error('No 2D context for waterfall buffer');
     this.waterfallCtx = wCtx;
@@ -74,11 +74,13 @@ export class OscilloscopeRenderer {
     ctx.fillRect(0, 0, width, height);
 
     if (!powerOn) {
-      // Off state: slight scanline glow
       ctx.fillStyle = '#0f1722';
-      ctx.font = '12px monospace';
+      ctx.font = '13px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('STANDBY // POWER OFF', width / 2, height / 2);
+      ctx.fillText('STANDBY // SYSTEM POWER DEACTIVATED', width / 2, height / 2);
+      ctx.fillStyle = '#64748b';
+      ctx.font = '10px monospace';
+      ctx.fillText('CLICK POWER BUTTON TO INITIALIZE RECEIVER RACK', width / 2, height / 2 + 22);
       this.drawScanlines(ctx, width, height);
       return;
     }
@@ -88,7 +90,7 @@ export class OscilloscopeRenderer {
       analyser.getByteFrequencyData(this.freqData);
     }
 
-    // 1. Draw Waterfall (Top portion: y 0..200)
+    // 1. Draw Waterfall Spectrogram (Top portion: y 0..190)
     this.updateWaterfall(metrics);
     ctx.drawImage(this.waterfallCanvas, 0, 0);
 
@@ -96,14 +98,14 @@ export class OscilloscopeRenderer {
     ctx.strokeStyle = '#1e293b';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(0, 200);
-    ctx.lineTo(width, 200);
+    ctx.moveTo(0, 190);
+    ctx.lineTo(width, 190);
     ctx.stroke();
 
-    // 2. Draw Oscilloscope (Bottom portion: y 200..380)
+    // 2. Draw Phosphor Oscilloscope (Bottom portion: y 190..360)
     this.drawOscilloscopeWaveform(width, height);
 
-    // 3. CRT Scanline overlay & Reticle
+    // 3. CRT Scanline overlay, Reticle & Metrics
     this.drawReticleAndMetrics(width, height, metrics);
     this.drawScanlines(ctx, width, height);
   }
@@ -128,7 +130,6 @@ export class OscilloscopeRenderer {
     }
 
     for (let x = 0; x < w; x++) {
-      // Map x to frequency bins
       const binIdx = Math.floor((x / w) * (this.freqData.length * 0.7));
       let intensity = this.freqData[binIdx] || 0;
 
@@ -136,14 +137,14 @@ export class OscilloscopeRenderer {
       if (glyphCol && x > w * 0.35 && x < w * 0.65) {
         const glyphY = Math.floor(((x - w * 0.35) / (w * 0.3)) * glyphCol.length);
         if (glyphCol[glyphY] === 1) {
-          intensity = Math.min(255, intensity + 160);
+          intensity = Math.min(255, intensity + 175);
         }
       }
 
       // Amber / Cyan thermal heatmap palette
-      const r = intensity > 160 ? 255 : intensity * 1.2;
-      const g = intensity > 80 ? intensity : intensity * 0.5;
-      const b = intensity > 200 ? 220 : intensity * 0.3;
+      const r = intensity > 160 ? 255 : intensity * 1.25;
+      const g = intensity > 80 ? intensity : intensity * 0.55;
+      const b = intensity > 200 ? 230 : intensity * 0.35;
 
       const idx0 = x * 4;
       data[idx0] = r;
@@ -163,13 +164,13 @@ export class OscilloscopeRenderer {
 
   private drawOscilloscopeWaveform(width: number, height: number): void {
     const { ctx } = this;
-    const oscYCenter = 290;
-    const oscHeight = 80;
+    const oscYCenter = 275;
+    const oscHeight = 70;
 
     // Grid lines for oscilloscope
-    ctx.strokeStyle = 'rgba(0, 255, 136, 0.1)';
+    ctx.strokeStyle = 'rgba(0, 255, 136, 0.08)';
     ctx.lineWidth = 1;
-    for (let y = 210; y < height - 10; y += 20) {
+    for (let y = 200; y < height - 10; y += 20) {
       ctx.beginPath();
       ctx.moveTo(10, y);
       ctx.lineTo(width - 10, y);
@@ -177,7 +178,7 @@ export class OscilloscopeRenderer {
     }
     for (let x = 10; x < width - 10; x += 40) {
       ctx.beginPath();
-      ctx.moveTo(x, 210);
+      ctx.moveTo(x, 200);
       ctx.lineTo(x, height - 10);
       ctx.stroke();
     }
@@ -212,18 +213,47 @@ export class OscilloscopeRenderer {
   private drawReticleAndMetrics(width: number, height: number, metrics: ReceptionMetrics): void {
     const { ctx } = this;
 
-    // Labels
+    // Top Section Labels
     ctx.fillStyle = '#00e5ff';
     ctx.font = '10px monospace';
     ctx.textAlign = 'left';
     ctx.fillText('WATERFALL SPECTROGRAM [0 - 5.0 kHz]', 12, 16);
-    ctx.fillText('TIME-DOMAIN PHOSPHOR OSCILLOSCOPE', 12, 218);
+    ctx.fillText('TIME-DOMAIN PHOSPHOR OSCILLOSCOPE', 12, 206);
+
+    // Optical Signal Indicator LED (for hearing-impaired accessibility)
+    const ledX = width - 18;
+    const ledY = 203;
+    ctx.beginPath();
+    ctx.arc(ledX, ledY, 5, 0, Math.PI * 2);
+    if (metrics.isSignalBlipActive) {
+      ctx.fillStyle = '#00ff88';
+      ctx.shadowColor = '#00ff88';
+      ctx.shadowBlur = 10;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#00ff88';
+      ctx.textAlign = 'right';
+      ctx.fillText('CARRIER PULSE [ACTIVE]', ledX - 10, ledY + 3);
+    } else {
+      ctx.fillStyle = '#1e293b';
+      ctx.fill();
+    }
 
     // Tuned signal HUD badge
     ctx.textAlign = 'right';
     if (metrics.tunedSignal && metrics.signalStrength > 0.2) {
       ctx.fillStyle = '#00ff88';
       ctx.fillText(`SIGNAL LOCK: ${metrics.tunedSignal.name} (${metrics.signalToNoiseRatio} dB SNR)`, width - 12, 16);
+
+      // Filter status alert badge on CRT
+      ctx.textAlign = 'left';
+      if (metrics.isFilterOptimal) {
+        ctx.fillStyle = '#00ff88';
+        ctx.fillText('✓ FILTER ENVELOPE OPTIMAL', 12, 345);
+      } else {
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillText('⚠ HIGH INTERFERENCE // ADJUST FILTER', 12, 345);
+      }
     } else {
       ctx.fillStyle = '#64748b';
       ctx.fillText('NO CARRIER // STATIC NOISE', width - 12, 16);
@@ -231,9 +261,9 @@ export class OscilloscopeRenderer {
 
     // Signal strength bar (VU Meter in CRT corner)
     const meterX = width - 150;
-    const meterY = height - 24;
+    const meterY = height - 20;
     const meterW = 138;
-    const meterH = 10;
+    const meterH = 8;
 
     ctx.fillStyle = '#1e293b';
     ctx.fillRect(meterX, meterY, meterW, meterH);
@@ -244,7 +274,7 @@ export class OscilloscopeRenderer {
 
     ctx.fillStyle = '#94a3b8';
     ctx.font = '9px monospace';
-    ctx.fillText(`RSSI: ${(metrics.signalStrength * 100).toFixed(0)}%`, meterX - 8, meterY + 9);
+    ctx.fillText(`RSSI: ${(metrics.signalStrength * 100).toFixed(0)}%`, meterX - 8, meterY + 7);
   }
 
   private drawScanlines(ctx: CanvasRenderingContext2D, width: number, height: number): void {

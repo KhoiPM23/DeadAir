@@ -16,7 +16,7 @@
     }
 
     body {
-      background: #080c12;
+      background: #06090f;
       color: #94a3b8;
       font-family: 'Share Tech Mono', monospace;
       min-height: 100vh;
@@ -24,20 +24,20 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 16px;
+      padding: 12px;
     }
 
     .rack-console {
       width: 100%;
-      max-width: 1100px;
-      background: #0f1622;
+      max-width: 1120px;
+      background: #0d131e;
       border: 3px solid #1e293b;
       border-radius: 12px;
-      padding: 20px;
+      padding: 18px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), inset 0 2px 4px rgba(255, 255, 255, 0.05);
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
     }
 
     header {
@@ -45,11 +45,11 @@
       justify-content: space-between;
       align-items: center;
       border-bottom: 2px solid #1e293b;
-      padding-bottom: 14px;
+      padding-bottom: 12px;
     }
 
     .brand-title {
-      font-size: 26px;
+      font-size: 24px;
       font-weight: 700;
       color: #00ffaa;
       letter-spacing: 3px;
@@ -59,17 +59,17 @@
     .header-controls {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 10px;
     }
 
     .btn-power {
       background: #271414;
       border: 2px solid #ff4444;
       color: #ff4444;
-      padding: 8px 18px;
+      padding: 7px 16px;
       font-family: inherit;
       font-weight: 700;
-      font-size: 13px;
+      font-size: 12px;
       border-radius: 6px;
       cursor: pointer;
       transition: all 0.2s;
@@ -84,15 +84,15 @@
 
     .main-grid {
       display: grid;
-      grid-template-columns: 620px 1fr;
-      gap: 20px;
+      grid-template-columns: 604px 1fr;
+      gap: 16px;
     }
 
     /* Left Console: CRT & Tuner */
     .tuner-section {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 12px;
     }
 
     .crt-bezel {
@@ -106,20 +106,20 @@
 
     #crtCanvas {
       display: block;
-      width: 604px;
+      width: 588px;
       height: 360px;
       background: #05080d;
       border-radius: 4px;
     }
 
     .analog-controls {
-      background: #141c2b;
-      border: 1px solid #223249;
+      background: #111824;
+      border: 1px solid #1e2b40;
       border-radius: 8px;
-      padding: 16px;
+      padding: 14px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 12px;
     }
 
     .frequency-display-row {
@@ -129,12 +129,12 @@
       background: #080d14;
       border: 1px solid #1e293b;
       border-radius: 6px;
-      padding: 10px 16px;
+      padding: 8px 14px;
     }
 
     .freq-readout {
       font-family: 'VT323', monospace;
-      font-size: 40px;
+      font-size: 38px;
       color: #00e5ff;
       letter-spacing: 3px;
       text-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
@@ -142,18 +142,19 @@
 
     .freq-tuning-buttons {
       display: flex;
-      gap: 6px;
+      gap: 5px;
     }
 
     .btn-step {
       background: #1b263b;
       border: 1px solid #334a6e;
       color: #cbd5e1;
-      padding: 6px 10px;
+      padding: 5px 9px;
       font-family: inherit;
       font-size: 11px;
       border-radius: 4px;
       cursor: pointer;
+      transition: all 0.15s;
     }
 
     .btn-step:hover {
@@ -165,7 +166,7 @@
     .slider-row {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 5px;
     }
 
     .slider-row label {
@@ -183,44 +184,48 @@
 
     .filter-selector-row {
       display: flex;
-      gap: 8px;
+      gap: 6px;
     }
 
     .btn-filter {
       flex: 1;
-      background: #1a2333;
-      border: 1px solid #2d3c54;
+      background: #172030;
+      border: 1px solid #28374f;
       color: #94a3b8;
-      padding: 8px 4px;
+      padding: 7px 4px;
       font-family: inherit;
-      font-size: 11px;
+      font-size: 10px;
       border-radius: 4px;
       cursor: pointer;
       text-align: center;
+      transition: all 0.15s;
     }
 
     .btn-filter.active {
       background: rgba(0, 229, 255, 0.15);
       border-color: #00e5ff;
       color: #00e5ff;
+      box-shadow: 0 0 8px rgba(0, 229, 255, 0.25);
     }
 
     /* Right Console: Dossier & Notebook */
     .dossier-section {
-      background: #121927;
-      border: 1px solid #223249;
+      background: #101622;
+      border: 1px solid #1e2b40;
       border-radius: 8px;
-      padding: 16px;
+      padding: 14px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 12px;
+      max-height: 610px;
+      overflow-y: auto;
     }
 
     .dossier-title {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 700;
       color: #cbd5e1;
-      border-bottom: 1px solid #223249;
+      border-bottom: 1px solid #1e2b40;
       padding-bottom: 8px;
       display: flex;
       justify-content: space-between;
@@ -228,18 +233,20 @@
     }
 
     .signal-card {
-      background: #0d131e;
-      border: 1px solid #1e293b;
+      background: #090e17;
+      border: 1px solid #1b263b;
       border-radius: 6px;
-      padding: 12px;
+      padding: 10px 12px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
+      transition: all 0.2s;
     }
 
     .card-solved {
       border-color: #00ffaa !important;
       background: rgba(0, 255, 170, 0.04) !important;
+      box-shadow: 0 0 10px rgba(0, 255, 170, 0.1);
     }
 
     .sig-header {
@@ -280,19 +287,59 @@
       line-height: 1.4;
     }
 
+    .hints-box {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-radius: 4px;
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .hint-entry {
+      font-size: 10px;
+      color: #fcd34d;
+      line-height: 1.35;
+    }
+
+    .hint-level {
+      font-weight: 700;
+      color: #f59e0b;
+    }
+
+    .btn-hint {
+      background: transparent;
+      border: 1px solid #475569;
+      color: #94a3b8;
+      font-family: inherit;
+      font-size: 9px;
+      padding: 3px 7px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-hint:hover {
+      border-color: #f59e0b;
+      color: #f59e0b;
+    }
+
     .sig-input-group {
       display: flex;
       gap: 6px;
+      margin-top: 4px;
     }
 
     .sig-input {
       flex: 1;
       background: #080d14;
-      border: 1px solid #2d3c54;
+      border: 1px solid #28374f;
       color: #f1f5f9;
       font-family: inherit;
       font-size: 11px;
-      padding: 6px 10px;
+      padding: 5px 8px;
       border-radius: 4px;
     }
 
@@ -300,11 +347,17 @@
       background: #1b263b;
       border: 1px solid #00e5ff;
       color: #00e5ff;
-      padding: 6px 12px;
+      padding: 5px 10px;
       font-family: inherit;
-      font-size: 11px;
+      font-size: 10px;
+      font-weight: 700;
       border-radius: 4px;
       cursor: pointer;
+    }
+
+    .btn-verify:hover {
+      background: #00e5ff;
+      color: #080d14;
     }
 
     .solved-label {
@@ -314,12 +367,33 @@
       padding: 4px 0;
     }
 
-    /* Modal */
+    .key-badge {
+      background: #1e293b;
+      color: #f1f5f9;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 9px;
+      border: 1px solid #334460;
+    }
+
+    .controls-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #64748b;
+      background: #090e17;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid #162030;
+    }
+
+    /* Modals */
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(4, 6, 10, 0.85);
-      backdrop-filter: blur(6px);
+      background: rgba(4, 6, 10, 0.88);
+      backdrop-filter: blur(8px);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -328,17 +402,17 @@
     }
 
     .modal-box {
-      background: #0f1622;
+      background: #0d1420;
       border: 2px solid #00ffaa;
       border-radius: 8px;
-      max-width: 500px;
+      max-width: 520px;
       width: 100%;
-      padding: 24px;
+      padding: 22px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
       text-align: center;
-      box-shadow: 0 0 30px rgba(0, 255, 170, 0.2);
+      box-shadow: 0 0 36px rgba(0, 255, 170, 0.25);
     }
 
     .morse-chart {
@@ -362,10 +436,15 @@
 <body>
   <div class="rack-console">
     <header>
-      <div class="brand-title">DEAD AIR // SIGNAL INTERCEPT</div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span class="brand-title">DEAD AIR</span>
+        <span style="font-size: 11px; color: #64748b; letter-spacing: 1px;">MIL-STD SIGNAL INTERCEPT SYSTEM</span>
+      </div>
       <div class="header-controls">
-        <button id="btnMorseRef" class="btn-step" style="padding: 8px 14px;">MORSE REFERENCE</button>
-        <button id="btnPower" class="btn-power">SYSTEM POWER: OFF</button>
+        <button id="btnMorseRef" class="btn-step">MORSE REF</button>
+        <button id="btnMute" class="btn-step"><span id="muteLabel">SFX: ON</span> <span class="key-badge">[M]</span></button>
+        <button id="btnPause" class="btn-step"><span id="pauseLabel">PAUSE</span> <span class="key-badge">[P]</span></button>
+        <button id="btnPower" class="btn-power">POWER: OFF</button>
       </div>
     </header>
 
@@ -373,13 +452,13 @@
       <!-- Left Column: CRT and Receiver Tuner -->
       <div class="tuner-section">
         <div class="crt-bezel">
-          <canvas id="crtCanvas" width="604" height="360"></canvas>
+          <canvas id="crtCanvas" width="588" height="360"></canvas>
         </div>
 
         <div class="analog-controls">
           <div class="frequency-display-row">
             <div>
-              <span style="font-size: 10px; color: #64748b;">CARRIER FREQUENCY</span>
+              <span style="font-size: 9px; color: #64748b;">CARRIER FREQUENCY</span>
               <div id="freqText" class="freq-readout">100.00 MHz</div>
             </div>
             <div class="freq-tuning-buttons">
@@ -403,14 +482,14 @@
           <div class="filter-selector-row">
             <button class="btn-filter active" data-filter="ALL_PASS">ALL-PASS (RAW)</button>
             <button class="btn-filter" data-filter="LOW_PASS">LOW-PASS (DE-HISS)</button>
-            <button class="btn-filter" data-filter="HIGH_PASS">HIGH-PASS</button>
             <button class="btn-filter" data-filter="NOTCH">NOTCH FILTER</button>
+            <button class="btn-filter" data-filter="HIGH_PASS">HIGH-PASS</button>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
             <div class="slider-row">
               <label>
-                <span>FILTER CUTOFF</span>
+                <span>CUTOFF FREQ</span>
                 <span id="cutoffVal">1500 Hz</span>
               </label>
               <input type="range" id="cutoffSlider" min="200" max="5000" step="50" value="1500">
@@ -423,6 +502,14 @@
               </label>
               <input type="range" id="squelchSlider" min="0" max="1" step="0.05" value="0.1">
             </div>
+
+            <div class="slider-row">
+              <label>
+                <span>MASTER VOL</span>
+                <span id="volumeVal">80%</span>
+              </label>
+              <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.8">
+            </div>
           </div>
         </div>
       </div>
@@ -430,11 +517,39 @@
       <!-- Right Column: Intercept Dossier -->
       <div class="dossier-section">
         <div class="dossier-title">
-          <span>INTERCEPT DOSSIER</span>
-          <span style="font-size: 11px; color: #00e5ff;">3 UNRESOLVED FREQUENCIES</span>
+          <span>FIELD DOSSIER // CLASSIFIED SIGNALS</span>
+          <span id="unresolvedBadge" style="font-size: 11px; color: #00e5ff;">4 UNRESOLVED FREQUENCIES</span>
         </div>
-        <div id="signalsList" style="display: flex; flex-direction: column; gap: 12px;"></div>
+        <div id="signalsList" style="display: flex; flex-direction: column; gap: 10px;"></div>
       </div>
+    </div>
+
+    <div class="controls-footer">
+      <span>Tuning: <span class="key-badge">←</span> <span class="key-badge">→</span> (Fine ±0.1) / <span class="key-badge">↑</span> <span class="key-badge">↓</span> (Coarse ±1.0)</span>
+      <span>Quick Carrier Lock: <span class="key-badge">SPACE</span></span>
+      <span>Audio Mute: <span class="key-badge">M</span></span>
+      <span>Pause: <span class="key-badge">P</span></span>
+      <span>Hardware: Web Audio DSP + Real-Time FFT Analyser</span>
+    </div>
+  </div>
+
+  <!-- Title / Briefing Screen Modal -->
+  <div id="modalBriefing" class="modal-backdrop">
+    <div class="modal-box" style="border-color: #00e5ff;">
+      <div style="font-size: 10px; color: #00e5ff; letter-spacing: 2px;">STATION 47 // SIGNAL CORPS DISPATCH</div>
+      <h2 style="color: #00e5ff; font-size: 24px;">DEAD AIR</h2>
+      <p style="color: #cbd5e1; font-size: 13px; line-height: 1.6; text-align: left;">
+        You have arrived at the decommissioned sub-Arctic listening post. Strange uncatalogued transmissions have begun broadcasting across emergency bands.
+      </p>
+      <div style="background: rgba(0,0,0,0.3); border-left: 3px solid #00e5ff; padding: 10px; text-align: left; font-size: 11px;">
+        <div>• <strong>Tune:</strong> Match carrier frequencies using the slider or keyboard arrows.</div>
+        <div>• <strong>Filter:</strong> Apply Low-Pass or Notch filters to strip jamming noise & feedback.</div>
+        <div>• <strong>Spectrogram:</strong> Watch the CRT waterfall for hidden steganography text.</div>
+        <div>• <strong>Dossier:</strong> Record your deductions into the evidence notebook to authorize extraction.</div>
+      </div>
+      <button id="btnStartBriefing" class="btn-step" style="background: #00e5ff; color: #080c12; font-weight: 700; padding: 10px 28px; font-size: 12px; align-self: center;">
+        INITIALIZE RECEIVER RACK
+      </button>
     </div>
   </div>
 
@@ -457,19 +572,33 @@
     </div>
   </div>
 
+  <!-- Pause Modal -->
+  <div id="modalPause" class="modal-backdrop hidden">
+    <div class="modal-box" style="border-color: #38bdf8;">
+      <h3 style="color: #38bdf8;">RECEIVER MONITORING PAUSED</h3>
+      <p style="color: #cbd5e1; font-size: 12px;">Audio synthesis and CRT oscilloscope scan suspended. Press [P] or click below to resume.</p>
+      <button id="btnResumeGame" class="btn-step" style="background: #38bdf8; color: #080c12; font-weight: 700; padding: 8px 20px; align-self: center;">
+        RESUME INTERCEPT
+      </button>
+    </div>
+  </div>
+
   <!-- All Mystery Solved Modal -->
   <div id="modalVictory" class="modal-backdrop hidden">
     <div class="modal-box">
-      <h2 style="color: #00ffaa; font-size: 24px;">BLACKSITE TRANSMISSION DECODED</h2>
-      <p style="color: #cbd5e1; font-size: 13px; line-height: 1.6;">
-        All 3 intercepted signals have been deciphered:<br>
-        <strong>1. Outpost Echo</strong> confirmed emergency status.<br>
-        <strong>2. Passcode 7391</strong> bypassed relay encryption.<br>
-        <strong>3. Project ICARUS</strong> orbital telemetry acquired.
+      <h2 style="color: #00ffaa; font-size: 22px;">ALL 4 SIGNALS DECIPHERED // EXTRACTION DISPATCHED</h2>
+      <p style="color: #cbd5e1; font-size: 12px; line-height: 1.6; text-align: left;">
+        Your intelligence synthesis has reconstructed the full incident timeline:<br><br>
+        <strong>1. Outpost Echo</strong> confirmed initial emergency evacuation.<br>
+        <strong>2. Passcode 7391</strong> bypassed the relay station jammer.<br>
+        <strong>3. Bunker Nexus</strong> unsealed subterranean command records.<br>
+        <strong>4. Project ICARUS</strong> orbital telemetry acquired.
       </p>
-      <p style="color: #00e5ff; font-weight: 700;">EXTRACTION COORDINATES AUTHORIZED: 45.2°N, 12.8°E</p>
+      <div style="background: rgba(0, 255, 170, 0.1); border: 1px solid #00ffaa; border-radius: 4px; padding: 8px; font-size: 11px; color: #00ffaa;">
+        EXTRACTION CHOPPER INBOUND: COORDINATES 45.2°N, 12.8°E
+      </div>
       <button id="btnRestartDossier" class="btn-step" style="background: #00ffaa; color: #080c12; font-weight: 700; padding: 10px 24px; align-self: center;">
-        ACKNOWLEDGE & ARCHIVE
+        ARCHIVE CASE & REPLAY
       </button>
     </div>
   </div>

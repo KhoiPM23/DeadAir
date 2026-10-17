@@ -1,5 +1,5 @@
 import { MYSTERY_SIGNALS } from './signals';
-import { MysterySignal, ReceiverParams, ReceptionMetrics } from './types';
+import { FilterType, MysterySignal, ReceiverParams, ReceptionMetrics } from './types';
 
 export class RadioEngine {
   private ctx: AudioContext | null = null;
@@ -13,6 +13,10 @@ export class RadioEngine {
   private heterodyneOsc: OscillatorNode | null = null;
   private heterodyneGain: GainNode | null = null;
 
+  // Dedicated interference oscillator for the Notch puzzle
+  private notchInterferenceOsc: OscillatorNode | null = null;
+  private notchInterferenceGain: GainNode | null = null;
+
   private filterNode: BiquadFilterNode | null = null;
   private masterGain: GainNode | null = null;
   private analyser: AnalyserNode | null = null;
@@ -23,14 +27,16 @@ export class RadioEngine {
     filterCutoffHz: 1500,
     squelch: 0.1,
     volume: 0.8,
+    isMuted: false,
     powerOn: false
   };
 
   private currentSequenceIndex = 0;
   private timerHandle: number | null = null;
+  private isBlipActive = false;
 
   constructor() {
-    // Lazy initialize on user gesture to obey autoplay policy
+    // Audio context is initialized lazily upon user gesture to comply with browser autoplay policies
   }
 
   public initAudio(): boolean {
@@ -47,23 +53,24 @@ export class RadioEngine {
 
       // Master output
       this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.setValueAtTime(this.params.volume, this.ctx.currentTime);
+      const currentVol = this.params.isMuted ? 0 : this.params.volume;
+      this.masterGain.gain.setValueAtTime(currentVol, this.ctx.currentTime);
 
-      // Analyser for CRT / Waterfall
+      // Analyser for CRT / Waterfall spectrogram
       this.analyser = this.ctx.createAnalyser();
       this.analyser.fftSize = 1024;
       this.analyser.smoothingTimeConstant = 0.75;
 
-      // Filter Node
+      // Primary Biquad Filter Node
       this.filterNode = this.ctx.createBiquadFilter();
       this.applyFilterSettings();
 
-      // Wiring output chain: Filter -> Analyser -> Master -> Destination
+      // Output chain: Filter -> Analyser -> Master -> Speakers
       this.filterNode.connect(this.analyser);
       this.analyser.connect(this.masterGain);
       this.masterGain.connect(this.ctx.destination);
 
-      // 1. Static Noise Generator
+      // 1. Static Noise Generator (Pink/Brown noise filter)
       const noiseBuffer = this.createWhiteNoiseBuffer(this.ctx);
       this.noiseNode = this.ctx.createBufferSource();
       this.noiseNode.buffer = noiseBuffer;
@@ -74,7 +81,7 @@ export class RadioEngine {
       this.noiseGain.connect(this.filterNode);
       this.noiseNode.start();
 
-      // 2. Heterodyne Beat Oscillator (Radio Whistle)
+      // 2. Heterodyne Beat Oscillator (Radio Whistle when off-center)
       this.heterodyneOsc = this.ctx.createOscillator();
       this.heterodyneOsc.type = 'sine';
       this.heterodyneGain = this.ctx.createGain();
@@ -83,7 +90,17 @@ export class RadioEngine {
       this.heterodyneGain.connect(this.filterNode);
       this.heterodyneOsc.start();
 
-      // 3. Signal Audio Generators
+      // 3. Piercing 1000Hz Notch Interference Whine
+      this.notchInterferenceOsc = this.ctx.createOscillator();
+      this.notchInterferenceOsc.type = 'square';
+      this.notchInterferenceOsc.frequency.setValueAtTime(1000, this.ctx.currentTime);
+      this.notchInterferenceGain = this.ctx.createGain();
+      this.notchInterferenceGain.gain.setValueAtTime(0.0, this.ctx.currentTime);
+      this.notchInterferenceOsc.connect(this.notchInterferenceGain);
+      this.notchInterferenceGain.connect(this.filterNode);
+      this.notchInterferenceOsc.start();
+
+      // 4. Signal Audio Generators (Dual tone carrier)
       this.signalGain = this.ctx.createGain();
       this.signalGain.gain.setValueAtTime(0.0, this.ctx.currentTime);
       this.signalGain.connect(this.filterNode);
@@ -100,7 +117,7 @@ export class RadioEngine {
       this.signalOsc2.connect(this.signalGain);
       this.signalOsc2.start();
 
-      // Start sequence interval for signal modulation
+      // Start modulation loop for pulsing signals
       this.startSignalModulationLoop();
       return true;
     } catch (err) {
@@ -116,7 +133,6 @@ export class RadioEngine {
     let lastOut = 0.0;
 
     for (let i = 0; i < bufferSize; i++) {
-      // Pink/Brownish radio static filter for authentic analog hiss
       const white = Math.random() * 2 - 1;
       data[i] = (lastOut + 0.02 * white) / 1.02;
       lastOut = data[i];
@@ -137,18 +153,20 @@ export class RadioEngine {
   }
 
   public setFrequency(freqMHz: number): void {
-    this.params.frequencyMHz = Math.max(80.0, Math.min(500.0, freqMHz));
+    this.params.frequencyMHz = Math.max(80.0, Math.min(500.0, parseFloat(freqMHz.toFixed(2))));
     this.updateAudioLevels();
   }
 
-  public setFilterType(type: ReceiverParams['filterType']): void {
+  public setFilterType(type: FilterType): void {
     this.params.filterType = type;
     this.applyFilterSettings();
+    this.updateAudioLevels();
   }
 
   public setFilterCutoff(hz: number): void {
     this.params.filterCutoffHz = Math.max(100, Math.min(10000, hz));
     this.applyFilterSettings();
+    this.updateAudioLevels();
   }
 
   public setSquelch(val: number): void {
@@ -158,9 +176,22 @@ export class RadioEngine {
 
   public setVolume(val: number): void {
     this.params.volume = Math.max(0, Math.min(1, val));
-    if (this.masterGain && this.ctx) {
+    if (this.masterGain && this.ctx && !this.params.isMuted) {
       this.masterGain.gain.setValueAtTime(this.params.volume, this.ctx.currentTime);
     }
+  }
+
+  public setMute(muted: boolean): boolean {
+    this.params.isMuted = muted;
+    if (this.masterGain && this.ctx) {
+      const targetGain = this.params.isMuted ? 0 : this.params.volume;
+      this.masterGain.gain.setValueAtTime(targetGain, this.ctx.currentTime);
+    }
+    return this.params.isMuted;
+  }
+
+  public isMuted(): boolean {
+    return this.params.isMuted;
   }
 
   public getParams(): Readonly<ReceiverParams> {
@@ -191,7 +222,7 @@ export class RadioEngine {
       case 'NOTCH':
         this.filterNode.type = 'notch';
         this.filterNode.frequency.setValueAtTime(this.params.filterCutoffHz, this.ctx.currentTime);
-        this.filterNode.Q.setValueAtTime(6.0, this.ctx.currentTime);
+        this.filterNode.Q.setValueAtTime(7.0, this.ctx.currentTime);
         break;
     }
   }
@@ -216,7 +247,8 @@ export class RadioEngine {
         signalStrength: 0,
         signalToNoiseRatio: 0,
         heterodynePitchHz: 0,
-        isFilterOptimal: false
+        isFilterOptimal: false,
+        isSignalBlipActive: false
       };
     }
 
@@ -228,10 +260,12 @@ export class RadioEngine {
     // Whistling beat frequency drops to 0 as you dial in exactly
     const heterodyneHz = minDistance > 0.02 ? Math.min(2200, minDistance * 1800 + 100) : 0;
 
-    // Filter check: signal-omega requires lowpass; others are fine on allpass
+    // Filter verification rules
     let isFilterOptimal = true;
     if (closestSignal.id === 'signal-omega') {
       isFilterOptimal = this.params.filterType === 'LOW_PASS' && this.params.filterCutoffHz < 1200;
+    } else if (closestSignal.id === 'signal-nexus') {
+      isFilterOptimal = this.params.filterType === 'NOTCH' && Math.abs(this.params.filterCutoffHz - 1000) <= 150;
     }
 
     return {
@@ -240,7 +274,8 @@ export class RadioEngine {
       signalStrength: strength,
       signalToNoiseRatio: Math.round(snr),
       heterodynePitchHz: Math.round(heterodyneHz),
-      isFilterOptimal
+      isFilterOptimal,
+      isSignalBlipActive: this.isBlipActive && strength > 0.25
     };
   }
 
@@ -255,12 +290,13 @@ export class RadioEngine {
     const metrics = this.getReceptionMetrics();
     const now = this.ctx.currentTime;
 
+    const currentVol = this.params.isMuted ? 0 : this.params.volume;
+    if (this.masterGain) {
+      this.masterGain.gain.setValueAtTime(currentVol, now);
+    }
+
     // Squelch muting logic
     const isMutedBySquelch = metrics.signalStrength < this.params.squelch && !metrics.tunedSignal;
-
-    if (this.masterGain) {
-      this.masterGain.gain.setValueAtTime(this.params.volume, now);
-    }
 
     // Static noise level
     if (this.noiseGain) {
@@ -278,6 +314,16 @@ export class RadioEngine {
         this.heterodyneGain.gain.setTargetAtTime(0, now, 0.05);
       }
     }
+
+    // Notch 1000Hz interference squeal (active on signal-nexus unless notch filtered)
+    if (this.notchInterferenceGain && this.notchInterferenceOsc) {
+      if (metrics.tunedSignal?.id === 'signal-nexus' && metrics.signalStrength > 0.2) {
+        const interferenceVol = metrics.isFilterOptimal ? 0.001 : 0.28;
+        this.notchInterferenceGain.gain.setTargetAtTime(interferenceVol, now, 0.05);
+      } else {
+        this.notchInterferenceGain.gain.setTargetAtTime(0, now, 0.05);
+      }
+    }
   }
 
   private startSignalModulationLoop(): void {
@@ -288,6 +334,7 @@ export class RadioEngine {
 
       const metrics = this.getReceptionMetrics();
       if (!metrics.tunedSignal || metrics.signalStrength < 0.25) {
+        this.isBlipActive = false;
         if (this.signalGain) this.signalGain.gain.setValueAtTime(0, this.ctx.currentTime);
         return;
       }
@@ -296,8 +343,7 @@ export class RadioEngine {
       this.currentSequenceIndex++;
 
       if (signal.modulation === 'AM_MORSE') {
-        // Morse timing pattern for "SOS BASE ECHO"
-        // 1 = beep (dot), 2 = dash, 0 = space
+        // Morse sequence for "SOS BASE ECHO"
         const morseSequence = [
           1,0,1,0,1, 0,0, 2,0,2,0,2, 0,0, 1,0,1,0,1, // S O S
           0,0,0,
@@ -307,6 +353,7 @@ export class RadioEngine {
         ];
 
         const step = morseSequence[this.currentSequenceIndex % morseSequence.length];
+        this.isBlipActive = step > 0;
         const gain = step > 0 ? metrics.signalStrength * 0.28 : 0;
 
         if (this.signalOsc1 && this.signalGain) {
@@ -323,6 +370,7 @@ export class RadioEngine {
           [0, 0]       // pause
         ];
         const pair = dtmfTones[this.currentSequenceIndex % dtmfTones.length];
+        this.isBlipActive = pair[0] > 0;
 
         if (this.signalOsc1 && this.signalOsc2 && this.signalGain) {
           if (pair[0] > 0) {
@@ -333,11 +381,26 @@ export class RadioEngine {
             this.signalGain.gain.setValueAtTime(0, this.ctx.currentTime);
           }
         }
+      } else if (signal.modulation === 'NOTCH_BEACON') {
+        // Deep pulsed tone for "NEXUS"
+        const beaconPattern = [440, 0, 554, 0, 659, 0, 880, 0];
+        const freq = beaconPattern[this.currentSequenceIndex % beaconPattern.length];
+        this.isBlipActive = freq > 0;
+
+        if (this.signalOsc1 && this.signalGain) {
+          if (freq > 0) {
+            this.signalOsc1.frequency.setValueAtTime(freq, this.ctx.currentTime);
+            this.signalGain.gain.setValueAtTime(metrics.signalStrength * 0.25, this.ctx.currentTime);
+          } else {
+            this.signalGain.gain.setValueAtTime(0, this.ctx.currentTime);
+          }
+        }
       } else if (signal.modulation === 'SPECTRAL_WATERFALL') {
         // High altitude harmonic sweep that creates visible bands on waterfall
         const harmonicSteps = [520, 680, 840, 1060, 1280, 1500, 1720];
         const freq1 = harmonicSteps[this.currentSequenceIndex % harmonicSteps.length];
         const freq2 = harmonicSteps[(this.currentSequenceIndex + 2) % harmonicSteps.length];
+        this.isBlipActive = true;
 
         if (this.signalOsc1 && this.signalOsc2 && this.signalGain) {
           this.signalOsc1.frequency.setValueAtTime(freq1, this.ctx.currentTime);
