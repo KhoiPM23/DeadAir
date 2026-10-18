@@ -44,6 +44,7 @@ export class RadioEngine {
   private currentTapeSpeed: number = 1.0;
   private tapeSourceNode: AudioBufferSourceNode | null = null;
   private tapeRecordedDurationSec: number = 0;
+  private staticNoiseVolumeMultiplier: number = 1.0;
 
   constructor() {
 
@@ -193,6 +194,19 @@ export class RadioEngine {
     }
   }
 
+  public getVolume(): number {
+    return this.params.volume;
+  }
+
+  public setStaticVolume(multiplier: number): void {
+    this.staticNoiseVolumeMultiplier = Math.max(0, Math.min(2.0, multiplier));
+    this.updateAudioLevels();
+  }
+
+  public getStaticVolume(): number {
+    return this.staticNoiseVolumeMultiplier;
+  }
+
   public setMute(muted: boolean): boolean {
     this.params.isMuted = muted;
     if (this.masterGain && this.ctx) {
@@ -312,7 +326,8 @@ export class RadioEngine {
 
     // Static noise level
     if (this.noiseGain) {
-      const noiseVol = isMutedBySquelch ? 0.005 : Math.max(0.04, (1 - metrics.signalStrength * 0.85) * 0.25);
+      const baseNoise = isMutedBySquelch ? 0.005 : Math.max(0.04, (1 - metrics.signalStrength * 0.85) * 0.25);
+      const noiseVol = baseNoise * this.staticNoiseVolumeMultiplier;
       this.noiseGain.gain.setTargetAtTime(noiseVol, now, 0.05);
     }
 

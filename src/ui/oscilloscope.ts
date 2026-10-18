@@ -16,6 +16,8 @@ export class OscilloscopeRenderer {
   private waterfallCanvas: HTMLCanvasElement;
   private waterfallCtx: CanvasRenderingContext2D;
   private theme: PhosphorTheme = 'GREEN';
+  private scanlineIntensity: number = 0.16;
+  private isCurvatureVignetteEnabled: boolean = true;
 
   private timeData: Uint8Array<ArrayBuffer>;
   private freqData: Uint8Array<ArrayBuffer>;
@@ -104,6 +106,22 @@ export class OscilloscopeRenderer {
     const nextIdx = (themes.indexOf(this.theme) + 1) % themes.length;
     this.theme = themes[nextIdx];
     return this.theme;
+  }
+
+  public setScanlineIntensity(val: number): void {
+    this.scanlineIntensity = Math.max(0, Math.min(0.8, val));
+  }
+
+  public getScanlineIntensity(): number {
+    return this.scanlineIntensity;
+  }
+
+  public setCurvatureVignette(enabled: boolean): void {
+    this.isCurvatureVignetteEnabled = enabled;
+  }
+
+  public isCurvatureVignette(): boolean {
+    return this.isCurvatureVignetteEnabled;
   }
 
   public render(
@@ -517,20 +535,24 @@ export class OscilloscopeRenderer {
 
   private drawCRTOverlay(ctx: CanvasRenderingContext2D, width: number, height: number): void {
     // Scanlines
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.16)';
-    for (let y = 0; y < height; y += 3) {
-      ctx.fillRect(0, y, width, 1.2);
+    if (this.scanlineIntensity > 0) {
+      ctx.fillStyle = `rgba(0, 0, 0, ${this.scanlineIntensity})`;
+      for (let y = 0; y < height; y += 3) {
+        ctx.fillRect(0, y, width, 1.2);
+      }
     }
 
     // Glass Screen Curved Vignette Shadow
-    const grad = ctx.createRadialGradient(
-      width / 2, height / 2, Math.min(width, height) * 0.45,
-      width / 2, height / 2, Math.max(width, height) * 0.72
-    );
-    grad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-    grad.addColorStop(1, 'rgba(0, 0, 0, 0.55)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, width, height);
+    if (this.isCurvatureVignetteEnabled) {
+      const grad = ctx.createRadialGradient(
+        width / 2, height / 2, Math.min(width, height) * 0.45,
+        width / 2, height / 2, Math.max(width, height) * 0.72
+      );
+      grad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0.55)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, width, height);
+    }
 
     // Subtle Glass Screen Border
     ctx.strokeStyle = 'rgba(30, 48, 70, 0.6)';

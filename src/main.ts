@@ -2,7 +2,7 @@ import { RadioEngine } from './audio/radioEngine';
 import { MYSTERY_SIGNALS, STATION_LOGS } from './audio/signals';
 import { FilterType, MysterySignal } from './audio/types';
 import { NotebookManager } from './ui/notebook';
-import { OscilloscopeRenderer } from './ui/oscilloscope';
+import { PhosphorTheme, OscilloscopeRenderer } from './ui/oscilloscope';
 
 // DOM elements
 const crtCanvas = document.getElementById('crtCanvas') as HTMLCanvasElement;
@@ -53,6 +53,36 @@ const modalStationLogs = document.getElementById('modalStationLogs') as HTMLElem
 const btnCloseLogs = document.getElementById('btnCloseLogs') as HTMLButtonElement | null;
 const stationLogsContainer = document.getElementById('stationLogsContainer') as HTMLElement | null;
 
+// Settings & Options DOM
+const btnSettings = document.getElementById('btnSettings') as HTMLButtonElement | null;
+const modalSettings = document.getElementById('modalSettings') as HTMLElement | null;
+const btnCloseSettings = document.getElementById('btnCloseSettings') as HTMLButtonElement | null;
+const optMasterVol = document.getElementById('optMasterVol') as HTMLInputElement | null;
+const optMasterVolVal = document.getElementById('optMasterVolVal') as HTMLElement | null;
+const optStaticVol = document.getElementById('optStaticVol') as HTMLInputElement | null;
+const optStaticVolVal = document.getElementById('optStaticVolVal') as HTMLElement | null;
+const optScanlines = document.getElementById('optScanlines') as HTMLInputElement | null;
+const optScanlinesVal = document.getElementById('optScanlinesVal') as HTMLElement | null;
+const btnToggleCurvature = document.getElementById('btnToggleCurvature') as HTMLButtonElement | null;
+const btnToggleFullscreen = document.getElementById('btnToggleFullscreen') as HTMLButtonElement | null;
+
+// Field Handbook DOM
+const btnHandbook = document.getElementById('btnHandbook') as HTMLButtonElement | null;
+const modalHandbook = document.getElementById('modalHandbook') as HTMLElement | null;
+const btnCloseHandbook = document.getElementById('btnCloseHandbook') as HTMLButtonElement | null;
+
+// DEFCON Alert Modal DOM
+const modalDefconAlert = document.getElementById('modalDefconAlert') as HTMLElement | null;
+const defconBanner = document.getElementById('defconBanner') as HTMLElement | null;
+const defconTitle = document.getElementById('defconTitle') as HTMLElement | null;
+const defconBadge = document.getElementById('defconBadge') as HTMLElement | null;
+const teletypeBox = document.getElementById('teletypeBox') as HTMLElement | null;
+const debriefTime = document.getElementById('debriefTime') as HTMLElement | null;
+const debriefHints = document.getElementById('debriefHints') as HTMLElement | null;
+const debriefRating = document.getElementById('debriefRating') as HTMLElement | null;
+const btnReviewEvidence = document.getElementById('btnReviewEvidence') as HTMLButtonElement | null;
+const btnRestartDefcon = document.getElementById('btnRestartDefcon') as HTMLButtonElement | null;
+
 const modalBriefing = document.getElementById('modalBriefing') as HTMLElement;
 const btnStartBriefing = document.getElementById('btnStartBriefing') as HTMLButtonElement;
 
@@ -62,11 +92,180 @@ const unresolvedBadge = document.getElementById('unresolvedBadge') as HTMLElemen
 
 // Systems
 let isPaused = false;
+let missionStartTime = Date.now();
 const radio = new RadioEngine();
 const oscRenderer = new OscilloscopeRenderer(crtCanvas);
 
+// Settings persistence
+interface DeadAirSettings {
+  masterVol: number;
+  staticVol: number;
+  scanlines: number;
+  curvature: boolean;
+  theme: PhosphorTheme;
+}
+
+const SETTINGS_KEY = 'deadair_settings_v1';
+
+function loadSettings(): DeadAirSettings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return {
+    masterVol: 80,
+    staticVol: 100,
+    scanlines: 16,
+    curvature: true,
+    theme: 'GREEN'
+  };
+}
+
+let activeSettings = loadSettings();
+
+function applyAndSaveSettings(): void {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(activeSettings));
+  } catch {}
+
+  radio.setVolume(activeSettings.masterVol / 100);
+  radio.setStaticVolume(activeSettings.staticVol / 100);
+  oscRenderer.setScanlineIntensity(activeSettings.scanlines / 100);
+  oscRenderer.setCurvatureVignette(activeSettings.curvature);
+  oscRenderer.setTheme(activeSettings.theme);
+
+  if (optMasterVol) optMasterVol.value = activeSettings.masterVol.toString();
+  if (optMasterVolVal) optMasterVolVal.textContent = `${activeSettings.masterVol}%`;
+  if (optStaticVol) optStaticVol.value = activeSettings.staticVol.toString();
+  if (optStaticVolVal) optStaticVolVal.textContent = `${activeSettings.staticVol}%`;
+  if (optScanlines) optScanlines.value = activeSettings.scanlines.toString();
+  if (optScanlinesVal) optScanlinesVal.textContent = `${activeSettings.scanlines}%`;
+  if (btnToggleCurvature) {
+    if (activeSettings.curvature) {
+      btnToggleCurvature.classList.add('active');
+      btnToggleCurvature.textContent = 'ENABLED';
+    } else {
+      btnToggleCurvature.classList.remove('active');
+      btnToggleCurvature.textContent = 'DISABLED';
+    }
+  }
+  document.querySelectorAll('.btn-theme-choice').forEach(b => {
+    const t = b.getAttribute('data-theme');
+    if (t === activeSettings.theme) b.classList.add('active');
+    else b.classList.remove('active');
+  });
+  if (themeLabel) {
+    themeLabel.textContent = oscRenderer.getThemeName();
+  }
+}
+
+// Initialise settings
+applyAndSaveSettings();
+
+function showDefconAlert(): void {
+  if (!modalDefconAlert) {
+    modalVictory.classList.remove('hidden');
+    return;
+  }
+  modalDefconAlert.classList.remove('hidden');
+
+  const elapsedMs = Date.now() - missionStartTime;
+  const elapsedMinutes = Math.floor(elapsedMs / 60000);
+  const elapsedSeconds = Math.floor((elapsedMs % 60000) / 1000);
+  const timeFormatted = `${elapsedMinutes.toString().padStart(2, '0')}:${elapsedSeconds.toString().padStart(2, '0')}`;
+
+  if (debriefTime) debriefTime.textContent = timeFormatted;
+
+  let totalHints = 0;
+  for (const sig of MYSTERY_SIGNALS) {
+    totalHints += notebook.getRevealedHintLevel(sig.id);
+  }
+
+  if (debriefHints) {
+    debriefHints.textContent = `${totalHints} HINTS UTILIZED`;
+  }
+
+  if (debriefRating) {
+    if (totalHints === 0) debriefRating.textContent = 'MASTER SIGINT CRYPTANALYST (EXEMPLARY)';
+    else if (totalHints <= 3) debriefRating.textContent = 'VETERAN COMINT OPERATIVE';
+    else debriefRating.textContent = 'TACTICAL LISTENING SPECIALIST';
+  }
+
+  const lines = [
+    'FLASH PRIORITY // TELEX 83-X99 // STRATEGIC AIR COMMAND',
+    'ORIGIN: CHEYENNE MOUNTAIN UNDERGROUND CRYPTOGRAPHIC VAULT',
+    'TO: LISTENING OUTPOST ECHO-4, SHEMYA ISLAND',
+    'SUBJECT: EMERGENCY WAR ORDER DE-ESCALATION (OPERATION AURA)',
+    '------------------------------------------------------------',
+    '1. ALL 5 HIGH-LATITUDE IONOSPHERIC CIPHERS RESOLVED.',
+    '2. CONFIRMED CONTACTS:',
+    '   - OUTPOST ECHO DISTRESS RECONSTRUCTED (124.5 MHz)',
+    '   - SOVIET K-429 SUBMARINE BYPASS AUTHENTICATED [7391] (285.4 MHz)',
+    '   - BUNKER NEXUS 1000Hz FEEDBACK LOOP CLEARED [NEXUS] (340.8 MHz)',
+    '   - ORBITAL RECON SPECTRAL WATERFALL EXTRACTED [ICARUS] (415.0 MHz)',
+    '   - 4x TAPE BURST CALLSIGN DECIPHERED [VOID] (502.4 MHz)',
+    '3. ANOMALOUS IONOSPHERIC CONVERGENCE HAS CEASED.',
+    '4. DEFCON ALERT POSTURE DE-ESCALATED: DEFCON 2 ==> DEFCON 5.',
+    '5. AIR MOBILITY COMMAND DISPATCHED: CALLSIGN DUSTOFF-4.',
+    '   EXTRACTION HELICOPTER INBOUND TO WEATHER STATION PAD.',
+    'MISSION ACCOMPLISHED. STAND DOWN OPERATOR.'
+  ];
+
+  if (teletypeBox) {
+    teletypeBox.textContent = '';
+    let currentLine = 0;
+    let charIdx = 0;
+
+    if (defconBadge) {
+      defconBadge.className = 'defcon-badge';
+      defconBadge.textContent = 'DEFCON 2';
+    }
+    if (defconBanner) {
+      defconBanner.className = 'defcon-banner';
+    }
+    if (defconTitle) {
+      defconTitle.textContent = 'ALERT: DEFCON 2 // IONOSPHERIC THREAT RESOLVED';
+      defconTitle.style.color = '#ef4444';
+    }
+
+    const typeNext = () => {
+      if (currentLine >= lines.length) {
+        if (defconBadge) {
+          defconBadge.className = 'defcon-badge green';
+          defconBadge.textContent = 'DEFCON 5';
+        }
+        if (defconBanner) {
+          defconBanner.className = 'defcon-banner deescalated';
+        }
+        if (defconTitle) {
+          defconTitle.textContent = 'CLEARED: DEFCON 5 // EMERGENCY WAR ORDER STAND DOWN';
+          defconTitle.style.color = '#00ffaa';
+        }
+        radio.playCarrierLockChime();
+        return;
+      }
+
+      const line = lines[currentLine];
+      if (charIdx < line.length) {
+        teletypeBox.textContent += line[charIdx];
+        if (charIdx % 3 === 0) radio.playDialTick();
+        charIdx++;
+        setTimeout(typeNext, 12);
+      } else {
+        teletypeBox.textContent += '\n';
+        currentLine++;
+        charIdx = 0;
+        teletypeBox.scrollTop = teletypeBox.scrollHeight;
+        setTimeout(typeNext, 80);
+      }
+    };
+
+    setTimeout(typeNext, 200);
+  }
+}
+
 const notebook = new NotebookManager(() => {
-  modalVictory.classList.remove('hidden');
+  showDefconAlert();
 });
 
 function updateUnresolvedBadge(): void {
@@ -402,7 +601,6 @@ btnCloseLogs?.addEventListener('click', () => {
   modalStationLogs?.classList.add('hidden');
 });
 
-// Modals
 btnMorseRef.addEventListener('click', () => {
   modalMorse.classList.remove('hidden');
 });
@@ -411,14 +609,125 @@ btnCloseMorse.addEventListener('click', () => {
   modalMorse.classList.add('hidden');
 });
 
-btnRestartDossier.addEventListener('click', () => {
+function restartDossierGame(): void {
   modalVictory.classList.add('hidden');
+  modalDefconAlert?.classList.add('hidden');
   notebook.resetNotebook();
+  missionStartTime = Date.now();
   updateUnresolvedBadge();
+  updateFrequency(100.0);
+}
+
+btnRestartDossier.addEventListener('click', restartDossierGame);
+btnRestartDefcon?.addEventListener('click', restartDossierGame);
+btnReviewEvidence?.addEventListener('click', () => {
+  modalDefconAlert?.classList.add('hidden');
+  openEvidenceBoard();
 });
+
+// Options / Settings modal events
+function openSettingsModal(): void {
+  modalSettings?.classList.remove('hidden');
+}
+
+function closeSettingsModal(): void {
+  modalSettings?.classList.add('hidden');
+}
+
+btnSettings?.addEventListener('click', openSettingsModal);
+btnCloseSettings?.addEventListener('click', closeSettingsModal);
+
+// Handbook modal events
+function openHandbookModal(): void {
+  modalHandbook?.classList.remove('hidden');
+}
+
+function closeHandbookModal(): void {
+  modalHandbook?.classList.add('hidden');
+}
+
+btnHandbook?.addEventListener('click', openHandbookModal);
+btnCloseHandbook?.addEventListener('click', closeHandbookModal);
+
+// Settings Sliders & Toggles
+if (optMasterVol) {
+  optMasterVol.addEventListener('input', () => {
+    activeSettings.masterVol = parseInt(optMasterVol.value, 10);
+    applyAndSaveSettings();
+  });
+}
+
+if (optStaticVol) {
+  optStaticVol.addEventListener('input', () => {
+    activeSettings.staticVol = parseInt(optStaticVol.value, 10);
+    applyAndSaveSettings();
+  });
+}
+
+if (optScanlines) {
+  optScanlines.addEventListener('input', () => {
+    activeSettings.scanlines = parseInt(optScanlines.value, 10);
+    applyAndSaveSettings();
+  });
+}
+
+if (btnToggleCurvature) {
+  btnToggleCurvature.addEventListener('click', () => {
+    activeSettings.curvature = !activeSettings.curvature;
+    applyAndSaveSettings();
+  });
+}
+
+document.querySelectorAll('.btn-theme-choice').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const theme = btn.getAttribute('data-theme') as PhosphorTheme;
+    if (theme) {
+      activeSettings.theme = theme;
+      applyAndSaveSettings();
+    }
+  });
+});
+
+if (btnToggleFullscreen) {
+  btnToggleFullscreen.addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  });
+}
 
 // Global Keyboard Navigation
 window.addEventListener('keydown', (e) => {
+  // Toggle Settings [O]
+  if (e.key === 'o' || e.key === 'O') {
+    const isInputActive = ['input', 'textarea'].includes((e.target as HTMLElement)?.tagName?.toLowerCase());
+    if (!isInputActive) {
+      e.preventDefault();
+      if (modalSettings?.classList.contains('hidden')) {
+        openSettingsModal();
+      } else {
+        closeSettingsModal();
+      }
+      return;
+    }
+  }
+
+  // Toggle Handbook [H]
+  if (e.key === 'h' || e.key === 'H') {
+    const isInputActive = ['input', 'textarea'].includes((e.target as HTMLElement)?.tagName?.toLowerCase());
+    if (!isInputActive) {
+      e.preventDefault();
+      if (modalHandbook?.classList.contains('hidden')) {
+        openHandbookModal();
+      } else {
+        closeHandbookModal();
+      }
+      return;
+    }
+  }
+
   // Toggle Evidence Board [B]
   if (e.key === 'b' || e.key === 'B') {
     const isInputActive = ['input', 'textarea'].includes((e.target as HTMLElement)?.tagName?.toLowerCase());
@@ -451,16 +760,30 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'c' || e.key === 'C') {
     e.preventDefault();
     handleCycleTheme();
+    activeSettings.theme = oscRenderer.getTheme();
+    applyAndSaveSettings();
     return;
   }
 
-  // Close modals on Escape
+  // Close modals on Escape in hierarchical order
   if (e.key === 'Escape') {
-    modalEvidenceBoard?.classList.add('hidden');
-    modalStationLogs?.classList.add('hidden');
-    modalDossier?.classList.add('hidden');
-    modalMorse?.classList.add('hidden');
-    modalPause?.classList.add('hidden');
+    if (!modalSettings?.classList.contains('hidden')) {
+      modalSettings?.classList.add('hidden');
+    } else if (!modalHandbook?.classList.contains('hidden')) {
+      modalHandbook?.classList.add('hidden');
+    } else if (!modalDefconAlert?.classList.contains('hidden')) {
+      modalDefconAlert?.classList.add('hidden');
+    } else if (!modalEvidenceBoard?.classList.contains('hidden')) {
+      modalEvidenceBoard?.classList.add('hidden');
+    } else if (!modalStationLogs?.classList.contains('hidden')) {
+      modalStationLogs?.classList.add('hidden');
+    } else if (!modalDossier?.classList.contains('hidden')) {
+      modalDossier?.classList.add('hidden');
+    } else if (!modalMorse?.classList.contains('hidden')) {
+      modalMorse?.classList.add('hidden');
+    } else if (!modalPause?.classList.contains('hidden')) {
+      modalPause?.classList.add('hidden');
+    }
     return;
   }
 

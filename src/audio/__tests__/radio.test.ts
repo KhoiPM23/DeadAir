@@ -181,6 +181,23 @@ describe('DeadAir Audio Reception & Solution Validation', () => {
       expect(log.content.length).toBeGreaterThan(30);
     });
   });
+
+  it('should support static noise floor and volume adjustments', () => {
+    const radio = new RadioEngine();
+    expect(radio.getVolume()).toBe(0.8);
+    radio.setVolume(0.4);
+    expect(radio.getVolume()).toBe(0.4);
+
+    expect(radio.getStaticVolume()).toBe(1.0);
+    radio.setStaticVolume(1.4);
+    expect(radio.getStaticVolume()).toBe(1.4);
+
+    // Test clamping
+    radio.setStaticVolume(-0.5);
+    expect(radio.getStaticVolume()).toBe(0);
+    radio.setStaticVolume(3.5);
+    expect(radio.getStaticVolume()).toBe(2.0);
+  });
 });
 
 

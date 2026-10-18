@@ -523,6 +523,135 @@
       background: #0b1320;
     }
 
+    /* Settings Modal Styles */
+    .settings-group {
+      background: #090e17;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-align: left;
+    }
+    .settings-group-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #38bdf8;
+      letter-spacing: 1.5px;
+      border-bottom: 1px solid #1a273a;
+      padding-bottom: 4px;
+    }
+    .settings-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+    }
+    .settings-slider {
+      width: 140px;
+      accent-color: #38bdf8;
+      cursor: pointer;
+    }
+    .settings-toggle-btn {
+      background: #111b2b;
+      border: 1px solid #334460;
+      color: #94a3b8;
+      padding: 3px 10px;
+      font-family: inherit;
+      font-size: 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .settings-toggle-btn.active {
+      background: #003322;
+      border-color: #00ffaa;
+      color: #00ffaa;
+      font-weight: 700;
+    }
+    .keybindings-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+      color: #94a3b8;
+    }
+    .keybindings-table td {
+      padding: 4px 6px;
+      border-bottom: 1px solid #162030;
+    }
+    .keybindings-table td:first-child {
+      color: #f1f5f9;
+      font-weight: 700;
+      width: 40%;
+    }
+
+    /* Handbook Modal Styles */
+    .handbook-module {
+      background: #080d15;
+      border: 1px solid #1e293b;
+      border-left: 3px solid #34d399;
+      border-radius: 4px;
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .handbook-module-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #34d399;
+      margin-bottom: 4px;
+    }
+
+    /* DEFCON Modal Styles */
+    .defcon-banner {
+      background: #250909;
+      border: 2px solid #ef4444;
+      border-radius: 6px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .defcon-banner.deescalated {
+      background: #062016;
+      border-color: #00ffaa;
+    }
+    .defcon-badge {
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 2px;
+      background: #ef4444;
+      color: #fff;
+      animation: defconPulse 1s infinite alternate;
+    }
+    .defcon-badge.green {
+      background: #00ffaa;
+      color: #04100b;
+      animation: none;
+    }
+    @keyframes defconPulse {
+      0% { box-shadow: 0 0 6px rgba(239, 68, 68, 0.4); }
+      100% { box-shadow: 0 0 20px rgba(239, 68, 68, 1); }
+    }
+    .teletype-box {
+      background: #04080e;
+      border: 1px solid #1a273a;
+      border-radius: 4px;
+      padding: 12px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      line-height: 1.6;
+      color: #00ffaa;
+      text-align: left;
+      max-height: 220px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
     .hidden {
       display: none !important;
     }
@@ -536,9 +665,11 @@
         <span style="font-size: 11px; color: #64748b; letter-spacing: 1px;">MIL-STD SIGNAL INTERCEPT SYSTEM</span>
       </div>
       <div class="header-controls">
-        <button id="btnTheme" class="btn-step"><span id="themeLabel">CRT: P24 GREEN</span> <span class="key-badge">[C]</span></button>
+        <button id="btnSettings" class="btn-step" style="border-color: #38bdf8; color: #38bdf8;">OPTIONS <span class="key-badge">[O]</span></button>
+        <button id="btnHandbook" class="btn-step" style="border-color: #34d399; color: #34d399;">HANDBOOK <span class="key-badge">[H]</span></button>
         <button id="btnEvidenceBoard" class="btn-step" style="border-color: #ef4444; color: #f87171;">BOARD <span class="key-badge">[B]</span></button>
         <button id="btnStationLogs" class="btn-step" style="border-color: #f59e0b; color: #fbbf24;">LOGS <span class="key-badge">[L]</span></button>
+        <button id="btnTheme" class="btn-step"><span id="themeLabel">CRT: P24 GREEN</span> <span class="key-badge">[C]</span></button>
         <button id="btnDossiers" class="btn-step">DOSSIERS</button>
         <button id="btnMorseRef" class="btn-step">MORSE REF</button>
         <button id="btnMute" class="btn-step"><span id="muteLabel">SFX: ON</span> <span class="key-badge">[M]</span></button>
@@ -816,6 +947,220 @@
       </div>
       <div id="stationLogsContainer" style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px; max-height: 420px; overflow-y: auto; padding-right: 6px;">
         <!-- Populated dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Station Options & Configuration Modal -->
+  <div id="modalSettings" class="modal-backdrop hidden">
+    <div class="modal-box" style="max-width: 620px; width: 95vw; background: #0c121c; border-color: #38bdf8; padding: 20px; text-align: left;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1a273a; padding-bottom: 8px;">
+        <div>
+          <span style="font-size: 10px; color: #38bdf8; letter-spacing: 2px; font-weight: bold;">STATION 47 // HARDWARE & CRT CALIBRATION</span>
+          <h3 style="color: #7dd3fc; font-size: 18px; margin: 2px 0 0 0;">RECEIVER RACK OPTIONS</h3>
+        </div>
+        <button id="btnCloseSettings" class="btn-step" style="padding: 4px 12px; font-size: 11px;">CLOSE [ESC / O]</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px; max-height: 480px; overflow-y: auto; padding-right: 4px;">
+        <!-- Audio Subsystem Section -->
+        <div class="settings-group">
+          <div class="settings-group-title">AUDIO & SYNTHESIS DSP</div>
+          <div class="settings-row">
+            <div>
+              <div style="color: #f1f5f9; font-weight: bold;">Master Audio Volume</div>
+              <div style="color: #64748b; font-size: 10px;">Primary output gain for carrier oscillators, beat whistles, and clicks</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="range" id="optMasterVol" min="0" max="100" value="80" class="settings-slider">
+              <span id="optMasterVolVal" style="width: 38px; text-align: right; font-family: monospace; color: #38bdf8;">80%</span>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div style="color: #f1f5f9; font-weight: bold;">Atmospheric Static Floor</div>
+              <div style="color: #64748b; font-size: 10px;">Background ionospheric pink noise level (adjust for immersion vs clarity)</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="range" id="optStaticVol" min="0" max="150" value="100" class="settings-slider">
+              <span id="optStaticVolVal" style="width: 38px; text-align: right; font-family: monospace; color: #38bdf8;">100%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CRT Display Section -->
+        <div class="settings-group">
+          <div class="settings-group-title">CRT DISPLAY & VISUAL FILTERING</div>
+          <div class="settings-row">
+            <div>
+              <div style="color: #f1f5f9; font-weight: bold;">Scanline Intensity</div>
+              <div style="color: #64748b; font-size: 10px;">Horizontal cathode ray raster beam darkening</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="range" id="optScanlines" min="0" max="50" value="16" class="settings-slider">
+              <span id="optScanlinesVal" style="width: 38px; text-align: right; font-family: monospace; color: #38bdf8;">16%</span>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div style="color: #f1f5f9; font-weight: bold;">Glass Curvature & Vignette</div>
+              <div style="color: #64748b; font-size: 10px;">Realistic spherical bulb shadow at screen periphery</div>
+            </div>
+            <button id="btnToggleCurvature" class="settings-toggle-btn active">ENABLED</button>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div style="color: #f1f5f9; font-weight: bold;">Phosphor Glow Emulation</div>
+              <div style="color: #64748b; font-size: 10px;">Select laboratory display phosphor formulation</div>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button class="settings-toggle-btn btn-theme-choice" data-theme="GREEN">P24 GREEN</button>
+              <button class="settings-toggle-btn btn-theme-choice" data-theme="AMBER">P39 AMBER</button>
+              <button class="settings-toggle-btn btn-theme-choice" data-theme="CYAN">CYAN</button>
+              <button class="settings-toggle-btn btn-theme-choice" data-theme="SILVER">P4 SILVER</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- System & Display Mode Section -->
+        <div class="settings-group">
+          <div class="settings-group-title">SCREEN & ACCESSIBILITY</div>
+          <div class="settings-row">
+            <div>
+              <div style="color: #f1f5f9; font-weight: bold;">Hardware Display Mode</div>
+              <div style="color: #64748b; font-size: 10px;">Toggle browser fullscreen mode for focused signal interception</div>
+            </div>
+            <button id="btnToggleFullscreen" class="btn-step" style="border-color: #38bdf8; color: #38bdf8; font-size: 10px; padding: 4px 12px;">FULLSCREEN [F11]</button>
+          </div>
+        </div>
+
+        <!-- Keybindings Table -->
+        <div class="settings-group">
+          <div class="settings-group-title">OPERATIONAL KEYBINDINGS</div>
+          <table class="keybindings-table">
+            <tbody>
+              <tr><td>← / →</td><td>Fine Carrier Tuning (±0.1 MHz)</td></tr>
+              <tr><td>↑ / ↓</td><td>Coarse Band Jump (±1.0 MHz)</td></tr>
+              <tr><td>SPACE</td><td>Instant Carrier Resonance Lock</td></tr>
+              <tr><td>1 — 5</td><td>Classified Channel Direct Presets</td></tr>
+              <tr><td>O</td><td>Station Settings & Display Calibration</td></tr>
+              <tr><td>H</td><td>SIGINT Operator Tactical Field Handbook</td></tr>
+              <tr><td>B</td><td>Polar SIGINT Evidence Pinboard & Correlation Map</td></tr>
+              <tr><td>L</td><td>Station Watch Operational Logbook</td></tr>
+              <tr><td>C</td><td>Cycle CRT Phosphor Color Scheme</td></tr>
+              <tr><td>M</td><td>Audio Mute Toggle</td></tr>
+              <tr><td>P</td><td>Pause Monitoring & Signal Synthesis</td></tr>
+              <tr><td>ESC</td><td>Close Active Modal Dialog</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIGINT Operator Tactical Field Handbook Modal -->
+  <div id="modalHandbook" class="modal-backdrop hidden">
+    <div class="modal-box" style="max-width: 720px; width: 95vw; background: #0a111a; border-color: #34d399; padding: 20px; text-align: left;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1a332a; padding-bottom: 8px;">
+        <div>
+          <span style="font-size: 10px; color: #34d399; letter-spacing: 2px; font-weight: bold;">NATIONAL SECURITY AGENCY // US NAVAL SECURITY GROUP ACTIVITY</span>
+          <h3 style="color: #6ee7b7; font-size: 18px; margin: 2px 0 0 0;">SIGINT OPERATOR TACTICAL MANUAL (REF: NSG-83-47)</h3>
+        </div>
+        <button id="btnCloseHandbook" class="btn-step" style="padding: 4px 12px; font-size: 11px;">CLOSE [ESC / H]</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px; max-height: 480px; overflow-y: auto; padding-right: 6px;">
+        <div class="handbook-module">
+          <div class="handbook-module-title">MODULE 01: ZERO-BEAT CARRIER ACQUISITION & TUNING</div>
+          <p style="color: #cbd5e1;">
+            When scanning between 80.0 MHz and 520.0 MHz, off-frequency carriers generate an acoustic heterodyne whistle whose pitch reflects distance from center carrier. Rotate the tuner until whistle pitch drops to zero. At exact center frequency, the receiver sounds a resonant chime and the green <strong style="color: #00ffaa;">CARRIER PULSE [ACTIVE]</strong> lamp illuminates.
+          </p>
+        </div>
+
+        <div class="handbook-module">
+          <div class="handbook-module-title">MODULE 02: ACTIVE BIQUAD FILTRATION & NOISE REJECTION</div>
+          <p style="color: #cbd5e1;">
+            • <strong>Low-Pass Filter:</strong> Eliminates high-frequency electrical static and hiss (&gt;2000 Hz). In Channel 2 (Soviet K-429), switch to Low-Pass with Cutoff set to ~800 Hz to expose the 4-digit DTMF authorization cipher.<br>
+            • <strong>Notch Filter:</strong> Deploys a deep, high-Q rejection notch. In Channel 3 (Cheyenne Mountain), engage Notch Filter at 1000 Hz to carve out the piercing resonant squeal masking the clearance keyword.
+          </p>
+        </div>
+
+        <div class="handbook-module">
+          <div class="handbook-module-title">MODULE 03: SPECTRAL WATERFALL STEGANOGRAPHY</div>
+          <p style="color: #cbd5e1;">
+            The upper CRT monitor hosts a real-time Fast Fourier Transform (FFT) waterfall scrolling downward. In Channel 4 (Project ICARUS at 415.0 MHz), intelligence data is modulated directly across audio frequency bins. Read the luminous letterforms rolling across the waterfall display.
+          </p>
+        </div>
+
+        <div class="handbook-module">
+          <div class="handbook-module-title">MODULE 04: ANALOG TAPE DECK SPEED MANIPULATION</div>
+          <p style="color: #cbd5e1;">
+            Hostile trans-polar transmitters often utilize 4x high-speed burst compression. Use the rack-mounted tape deck: press <strong style="color: #ef4444;">● REC</strong> while tuned to 502.4 MHz to capture the transmission into magnetic storage, then switch speed to <strong style="color: #00ffaa;">0.25x</strong> to expand the chirp into legible Morse code.
+          </p>
+        </div>
+
+        <div class="handbook-module">
+          <div class="handbook-module-title">MODULE 05: DECLASSIFIED FREQUENCY ALLOCATION ROSTER</div>
+          <table class="keybindings-table" style="margin-top: 6px;">
+            <thead>
+              <tr style="color: #34d399; font-weight: bold; border-bottom: 1px solid #1a332a;">
+                <td style="padding-bottom: 4px;">FREQ</td>
+                <td style="padding-bottom: 4px;">CODENAME</td>
+                <td style="padding-bottom: 4px;">ORIGIN & DECRYPTION PROTOCOL</td>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td style="color: #00e5ff;">124.5 MHz</td><td>OUTPOST ECHO</td><td>St. Matthew Island. Decipher standard emergency Morse (... --- ...).</td></tr>
+              <tr><td style="color: #00e5ff;">285.4 MHz</td><td>SUBMARINE K-429</td><td>Kuril Trench. Engage LOW-PASS filter at 800 Hz to isolate 4-digit code.</td></tr>
+              <tr><td style="color: #00e5ff;">340.8 MHz</td><td>BUNKER NEXUS</td><td>Cheyenne Mountain. Engage NOTCH filter at 1000 Hz to carve out interference.</td></tr>
+              <tr><td style="color: #00e5ff;">415.0 MHz</td><td>PROJECT ICARUS</td><td>Orbital satellite. Read letterforms embedded on the waterfall spectrogram.</td></tr>
+              <tr><td style="color: #00e5ff;">502.4 MHz</td><td>STATION GORKY-9</td><td>Ionospheric mirror. Record burst on tape deck, replay at 0.25x speed.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEFCON Emergency War Order Alert & De-escalation Modal -->
+  <div id="modalDefconAlert" class="modal-backdrop hidden">
+    <div class="modal-box" style="max-width: 680px; width: 95vw; background: #080c14; border-color: #ef4444; padding: 22px; text-align: left; box-shadow: 0 0 50px rgba(239, 68, 68, 0.4);">
+      <div id="defconBanner" class="defcon-banner">
+        <div>
+          <span style="font-size: 10px; color: #f87171; letter-spacing: 2px; font-weight: bold;">FLASH PRIORITY // STRATEGIC AIR COMMAND // EMERGENCY WAR ORDER</span>
+          <h3 id="defconTitle" style="color: #ef4444; font-size: 20px; margin: 2px 0 0 0;">ALERT: DEFCON 2 // IONOSPHERIC THREAT RESOLVED</h3>
+        </div>
+        <div id="defconBadge" class="defcon-badge">DEFCON 2</div>
+      </div>
+
+      <div id="teletypeBox" class="teletype-box" style="margin-top: 12px;"></div>
+
+      <div id="defconDebrief" style="background: rgba(0, 255, 170, 0.06); border: 1px solid #00ffaa; border-radius: 6px; padding: 12px; margin-top: 12px; font-size: 11px; display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #94a3b8;">STATION WATCH DURATION:</span>
+          <span id="debriefTime" style="color: #00ffaa; font-family: monospace; font-weight: bold;">00:00</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #94a3b8;">CLASSIFIED SIGNALS RESOLVED:</span>
+          <span style="color: #00ffaa; font-family: monospace; font-weight: bold;">5 / 5 FREQUENCIES CONFIRMED</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #94a3b8;">INTELLIGENCE HINTS REQUESTED:</span>
+          <span id="debriefHints" style="color: #f59e0b; font-family: monospace; font-weight: bold;">0 HINTS</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-top: 1px solid rgba(0, 255, 170, 0.3); padding-top: 6px; margin-top: 2px;">
+          <span style="color: #f1f5f9; font-weight: bold;">OPERATOR PERFORMANCE RATING:</span>
+          <span id="debriefRating" style="color: #38bdf8; font-weight: bold; letter-spacing: 1px;">MASTER SIGINT CRYPTANALYST</span>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 14px; justify-content: flex-end;">
+        <button id="btnReviewEvidence" class="btn-step" style="border-color: #ef4444; color: #f87171; font-weight: bold; padding: 8px 16px;">
+          INSPECT EVIDENCE BOARD [B]
+        </button>
+        <button id="btnRestartDefcon" class="btn-step" style="background: #00ffaa; color: #080c12; font-weight: bold; padding: 8px 20px;">
+          ARCHIVE CASE & REPLAY
+        </button>
       </div>
     </div>
   </div>
