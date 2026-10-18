@@ -111,6 +111,26 @@ export class NotebookManager {
     });
 
     // Attach listeners
+    MYSTERY_SIGNALS.forEach((sig) => {
+      const inputEl = document.getElementById(`input-${sig.id}`) as HTMLInputElement;
+      if (inputEl) {
+        inputEl.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const success = this.checkSolution(sig.id, inputEl.value);
+            if (!success) {
+              inputEl.style.borderColor = '#ff4444';
+              inputEl.animate([
+                { transform: 'translateX(-4px)' },
+                { transform: 'translateX(4px)' },
+                { transform: 'translateX(0)' }
+              ], { duration: 200, iterations: 2 });
+            }
+          }
+        });
+      }
+    });
+
     listContainer.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
 

@@ -463,6 +463,10 @@
               <span style="font-size: 9px; color: #64748b;">CARRIER FREQUENCY</span>
               <div id="freqText" class="freq-readout">100.00 MHz</div>
             </div>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <input type="number" id="directFreqInput" step="0.1" min="80" max="520" placeholder="MHz" style="width: 72px; background: #080d14; border: 1px solid #28374f; color: #00e5ff; font-family: inherit; font-size: 12px; padding: 4px 6px; border-radius: 4px; text-align: center;">
+              <button id="btnDirectTune" class="btn-step" style="padding: 4px 10px; font-size: 11px; border-color: #00e5ff; color: #00e5ff;">TUNE</button>
+            </div>
             <div class="freq-tuning-buttons">
               <button class="btn-step" data-delta="-10.0">-10</button>
               <button class="btn-step" data-delta="-1.0">-1</button>
@@ -533,6 +537,21 @@
                 <button class="btn-step btn-tape-speed active" data-speed="1.0">1.0x</button>
                 <button class="btn-step btn-tape-speed" data-speed="2.0">2.0x</button>
               </div>
+            </div>
+          </div>
+
+          <!-- Diegetic Collapsible Morse Reference Dock Card -->
+          <div id="morseDockCard" style="margin-top: 10px; background: #090e18; border: 1px solid #1e2e44; border-radius: 6px; padding: 10px 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-size: 10px; color: #00e5ff; font-weight: bold; letter-spacing: 1px;">TACTICAL MORSE REFERENCE DECK</span>
+              <button id="btnToggleMorseDock" class="btn-step" style="padding: 2px 8px; font-size: 9px;">COLLAPSE</button>
+            </div>
+            <div id="morseDockGrid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px 8px; font-size: 10px; color: #cbd5e1; line-height: 1.3;">
+              <span><strong>A:</strong> .-</span><span><strong>B:</strong> -...</span><span><strong>C:</strong> -.-.</span><span><strong>D:</strong> -..</span><span><strong>E:</strong> .</span><span><strong>F:</strong> ..-.</span>
+              <span><strong>G:</strong> --.</span><span><strong>H:</strong> ....</span><span><strong>I:</strong> ..</span><span><strong>J:</strong> .---</span><span><strong>K:</strong> -.-</span><span><strong>L:</strong> .-..</span>
+              <span><strong>M:</strong> --</span><span><strong>N:</strong> -.</span><span><strong>O:</strong> ---</span><span><strong>P:</strong> .--.</span><span><strong>Q:</strong> --.-</span><span><strong>R:</strong> .-.</span>
+              <span><strong>S:</strong> ...</span><span><strong>T:</strong> -</span><span><strong>U:</strong> ..-</span><span><strong>V:</strong> ...-</span><span><strong>W:</strong> .--</span><span><strong>X:</strong> -..-</span>
+              <span><strong>Y:</strong> -.--</span><span><strong>Z:</strong> --..</span><span><strong>0:</strong> -----</span><span><strong>1:</strong> .----</span><span><strong>7:</strong> --...</span><span><strong>9:</strong> ----.</span>
             </div>
           </div>
         </div>

@@ -109,6 +109,34 @@ document.querySelectorAll('.btn-step[data-delta]').forEach((btn) => {
 });
 
 
+const directFreqInput = document.getElementById('directFreqInput') as HTMLInputElement | null;
+const btnDirectTune = document.getElementById('btnDirectTune') as HTMLButtonElement | null;
+const btnToggleMorseDock = document.getElementById('btnToggleMorseDock') as HTMLButtonElement | null;
+const morseDockGrid = document.getElementById('morseDockGrid') as HTMLElement | null;
+
+function applyDirectTune(): void {
+  if (!directFreqInput) return;
+  const val = parseFloat(directFreqInput.value);
+  if (!isNaN(val)) {
+    updateFrequency(val);
+  }
+}
+
+btnDirectTune?.addEventListener('click', applyDirectTune);
+directFreqInput?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    applyDirectTune();
+  }
+});
+
+btnToggleMorseDock?.addEventListener('click', () => {
+  if (!morseDockGrid || !btnToggleMorseDock) return;
+  const isHidden = morseDockGrid.style.display === 'none';
+  morseDockGrid.style.display = isHidden ? 'grid' : 'none';
+  btnToggleMorseDock.textContent = isHidden ? 'COLLAPSE' : 'EXPAND';
+});
+
 // Filter controls
 document.querySelectorAll('.btn-filter').forEach((btn) => {
   btn.addEventListener('click', () => {
