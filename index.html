@@ -428,6 +428,70 @@
       text-align: left;
     }
 
+    /* Evidence Pinboard & Logbook styles */
+    .pin-node {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+      transition: transform 0.15s ease;
+      z-index: 10;
+    }
+    .pin-node:hover {
+      transform: translate(-50%, -50%) scale(1.3);
+    }
+    .pin-node.unsolved {
+      background: #ef4444;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.8);
+      animation: pinPulse 1.2s infinite alternate;
+    }
+    .pin-node.solved {
+      background: #00ffaa;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 12px rgba(0, 255, 170, 0.8);
+    }
+    @keyframes pinPulse {
+      0% { transform: translate(-50%, -50%) scale(0.9); }
+      100% { transform: translate(-50%, -50%) scale(1.2); }
+    }
+    .pin-label {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      font-weight: bold;
+      color: #e2e8f0;
+      background: rgba(10, 16, 26, 0.9);
+      padding: 1px 4px;
+      border-radius: 3px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .log-entry-card {
+      background: #070b12;
+      border: 1px solid #233144;
+      border-left: 3px solid #f59e0b;
+      border-radius: 4px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      text-align: left;
+    }
+    .log-entry-card:hover {
+      border-color: #f59e0b;
+      background: #0b1320;
+    }
+
     .hidden {
       display: none !important;
     }
@@ -442,6 +506,8 @@
       </div>
       <div class="header-controls">
         <button id="btnTheme" class="btn-step"><span id="themeLabel">CRT: P24 GREEN</span> <span class="key-badge">[C]</span></button>
+        <button id="btnEvidenceBoard" class="btn-step" style="border-color: #ef4444; color: #f87171;">BOARD <span class="key-badge">[B]</span></button>
+        <button id="btnStationLogs" class="btn-step" style="border-color: #f59e0b; color: #fbbf24;">LOGS <span class="key-badge">[L]</span></button>
         <button id="btnDossiers" class="btn-step">DOSSIERS</button>
         <button id="btnMorseRef" class="btn-step">MORSE REF</button>
         <button id="btnMute" class="btn-step"><span id="muteLabel">SFX: ON</span> <span class="key-badge">[M]</span></button>
@@ -655,7 +721,68 @@
       <div id="dossierList" style="display: flex; flex-direction: column; gap: 8px; font-size: 11px; max-height: 380px; overflow-y: auto; padding-right: 6px;">
         <!-- Populated dynamically by main.ts -->
       </div>
-      <button id="btnCloseDossier" class="btn-step" style="align-self: center; padding: 8px 24px; margin-top: 8px;">CLOSE ARCHIVE</button>
+      <button id="btnCloseDossier" class="btn-step" style="padding: 8px 18px; align-self: center; margin-top: 10px;">CLOSE</button>
+    </div>
+  </div>
+
+  <!-- Cold War Evidence Board & Polar Map Modal -->
+  <div id="modalEvidenceBoard" class="modal-backdrop hidden">
+    <div class="modal-box" style="max-width: 860px; width: 95vw; background: #0c1017; border-color: #ef4444; padding: 18px; text-align: left;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #231616; padding-bottom: 8px;">
+        <div>
+          <span style="font-size: 10px; color: #ef4444; letter-spacing: 2px; font-weight: bold;">OPERATION AURA // INCIDENT EVIDENCE BOARD</span>
+          <h3 style="color: #f87171; font-size: 18px; margin: 2px 0 0 0;">POLAR SIGINT CORRELATION MAP</h3>
+        </div>
+        <button id="btnCloseEvidence" class="btn-step" style="padding: 4px 12px; font-size: 11px;">CLOSE [ESC / B]</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 310px; gap: 14px; margin-top: 12px; height: 420px;">
+        <!-- Pinboard Map Area -->
+        <div id="pinboardMap" style="position: relative; background: radial-gradient(circle at 50% 50%, #161e2e, #090e17); border: 2px solid #27354a; border-radius: 6px; overflow: hidden;">
+          <!-- Radar Grid Lines & Polar Rings -->
+          <svg id="pinboardSvg" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+            <circle cx="50%" cy="50%" r="42%" fill="none" stroke="rgba(0, 229, 255, 0.1)" stroke-dasharray="4 4" />
+            <circle cx="50%" cy="50%" r="28%" fill="none" stroke="rgba(0, 229, 255, 0.12)" stroke-dasharray="4 4" />
+            <circle cx="50%" cy="50%" r="14%" fill="none" stroke="rgba(0, 229, 255, 0.15)" stroke-dasharray="4 4" />
+            <line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(0, 229, 255, 0.1)" />
+            <line x1="50%" y1="0" x2="50%" y2="100%" stroke="rgba(0, 229, 255, 0.1)" />
+            <!-- Dynamic SVG String Connections -->
+            <g id="pinboardStrings"></g>
+          </svg>
+          <!-- Pins rendered dynamically -->
+          <div id="pinboardPins" style="position: absolute; inset: 0;"></div>
+        </div>
+
+        <!-- Evidence Detail Card -->
+        <div id="evidenceDetailPane" style="background: #080d15; border: 1px solid #1e293b; border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto;">
+          <div style="border-bottom: 1px solid #1e293b; padding-bottom: 6px;">
+            <span id="evClassification" style="font-size: 9px; padding: 2px 6px; border-radius: 3px; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171;">SECRET // NOFORN</span>
+            <h4 id="evTitle" style="color: #f1f5f9; font-size: 13px; margin: 6px 0 2px 0;">SELECT A MAP PIN</h4>
+            <span id="evCoords" style="font-size: 10px; color: #64748b;">LAT/LONG COORDINATES</span>
+          </div>
+          <div id="evDate" style="font-size: 10px; color: #38bdf8;">INTERCEPT TIMESTAMPS</div>
+          <div id="evCable" style="font-size: 11px; color: #cbd5e1; line-height: 1.5; white-space: pre-line; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; border-left: 2px solid #ef4444;">
+            Click any node on the polar grid to inspect its declassified intelligence cable, telemetry transcripts, and relation to Operation AURA.
+          </div>
+          <button id="btnTuneFromEvidence" class="btn-step" style="display: none; align-self: flex-start; margin-top: auto; border-color: #00e5ff; color: #00e5ff; font-size: 10px;">TUNE RECEIVER TO SIGNAL</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Station Operational Logbook Modal -->
+  <div id="modalStationLogs" class="modal-backdrop hidden">
+    <div class="modal-box" style="max-width: 680px; width: 95vw; background: #0b111a; border-color: #f59e0b; padding: 18px; text-align: left;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2d2012; padding-bottom: 8px;">
+        <div>
+          <span style="font-size: 10px; color: #f59e0b; letter-spacing: 2px; font-weight: bold;">STATION ECHO-4 // SHEMYA ISLAND, ALEUTIANS</span>
+          <h3 style="color: #fbbf24; font-size: 18px; margin: 2px 0 0 0;">OPERATOR WATCH LOGBOOK (OCTOBER 1983)</h3>
+        </div>
+        <button id="btnCloseLogs" class="btn-step" style="padding: 4px 12px; font-size: 11px;">CLOSE [ESC / L]</button>
+      </div>
+      <div id="stationLogsContainer" style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px; max-height: 420px; overflow-y: auto; padding-right: 6px;">
+        <!-- Populated dynamically -->
+      </div>
     </div>
   </div>
 

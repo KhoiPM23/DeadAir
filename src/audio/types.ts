@@ -9,6 +9,12 @@ export interface MysterySignal {
   bandwidthMHz: number;
   modulation: ModulationType;
   source: string;
+  coordinates: string;
+  interceptDate: string;
+  classification: string;
+  declassifiedCable: string;
+  pinboardX: number; // 0 to 100 percentage
+  pinboardY: number;
   morseText?: string;
   clueHint: string;
   hints: string[]; // Graduated hints (Level 1, 2, 3)
@@ -16,6 +22,17 @@ export interface MysterySignal {
   expectedInput: string;
   notchFrequencyHz?: number; // Target frequency for notch filtering
   spectralPattern?: number[][];
+}
+
+export interface StationLogEntry {
+  id: string;
+  date: string;
+  author: string;
+  callsign: string;
+  title: string;
+  content: string;
+  clearance?: string;
+  targetFrequencyMHz?: number;
 }
 
 export interface ReceiverParams {

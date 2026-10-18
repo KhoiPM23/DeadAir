@@ -1,6 +1,6 @@
 import { RadioEngine } from './audio/radioEngine';
-import { MYSTERY_SIGNALS } from './audio/signals';
-import { FilterType } from './audio/types';
+import { MYSTERY_SIGNALS, STATION_LOGS } from './audio/signals';
+import { FilterType, MysterySignal } from './audio/types';
 import { NotebookManager } from './ui/notebook';
 import { OscilloscopeRenderer } from './ui/oscilloscope';
 
@@ -34,6 +34,24 @@ const btnDossiers = document.getElementById('btnDossiers') as HTMLButtonElement 
 const modalDossier = document.getElementById('modalDossier') as HTMLElement | null;
 const btnCloseDossier = document.getElementById('btnCloseDossier') as HTMLButtonElement | null;
 const dossierList = document.getElementById('dossierList') as HTMLElement | null;
+
+// Cold War Evidence Board & Station Logs DOM
+const btnEvidenceBoard = document.getElementById('btnEvidenceBoard') as HTMLButtonElement | null;
+const modalEvidenceBoard = document.getElementById('modalEvidenceBoard') as HTMLElement | null;
+const btnCloseEvidence = document.getElementById('btnCloseEvidence') as HTMLButtonElement | null;
+const pinboardPins = document.getElementById('pinboardPins') as HTMLElement | null;
+const pinboardStrings = document.getElementById('pinboardStrings') as HTMLElement | null;
+const evTitle = document.getElementById('evTitle') as HTMLElement | null;
+const evClassification = document.getElementById('evClassification') as HTMLElement | null;
+const evCoords = document.getElementById('evCoords') as HTMLElement | null;
+const evDate = document.getElementById('evDate') as HTMLElement | null;
+const evCable = document.getElementById('evCable') as HTMLElement | null;
+const btnTuneFromEvidence = document.getElementById('btnTuneFromEvidence') as HTMLButtonElement | null;
+
+const btnStationLogs = document.getElementById('btnStationLogs') as HTMLButtonElement | null;
+const modalStationLogs = document.getElementById('modalStationLogs') as HTMLElement | null;
+const btnCloseLogs = document.getElementById('btnCloseLogs') as HTMLButtonElement | null;
+const stationLogsContainer = document.getElementById('stationLogsContainer') as HTMLElement | null;
 
 const modalBriefing = document.getElementById('modalBriefing') as HTMLElement;
 const btnStartBriefing = document.getElementById('btnStartBriefing') as HTMLButtonElement;
@@ -258,6 +276,121 @@ btnCloseDossier?.addEventListener('click', () => {
   modalDossier?.classList.add('hidden');
 });
 
+// Cold War Evidence Board & Polar Map Logic
+function renderEvidenceDetail(sig: MysterySignal): void {
+  if (!evTitle || !evClassification || !evCoords || !evDate || !evCable || !btnTuneFromEvidence) return;
+  const isSolved = notebook.isSignalSolved(sig.id);
+
+  evClassification.textContent = sig.classification;
+  const isTopSecret = sig.classification.includes('TOP') || sig.classification.includes('EYES');
+  evClassification.style.borderColor = isSolved ? '#00ffaa' : isTopSecret ? '#ef4444' : '#f59e0b';
+  evClassification.style.color = isSolved ? '#00ffaa' : isTopSecret ? '#f87171' : '#fbbf24';
+
+  evTitle.textContent = `${sig.name.toUpperCase()} // ${sig.frequencyMHz.toFixed(1)} MHz`;
+  evCoords.textContent = `POLAR RADAR COORDINATES: ${sig.coordinates}`;
+  evDate.textContent = `DE-SIGINT INTERCEPT: ${sig.interceptDate}`;
+
+  if (isSolved) {
+    evCable.textContent = sig.declassifiedCable;
+    evCable.style.borderColor = '#00ffaa';
+    evCable.style.color = '#cbd5e1';
+  } else {
+    evCable.textContent = `[ENCRYPTED MILITARY CABLE]\nCarrier: ${sig.frequencyMHz.toFixed(1)} MHz (${sig.modulation.toUpperCase()})\nClue: ${sig.clueHint}\n\n/// DECLASSIFICATION LOCKED ///\nMatch the carrier on your tuner and record the correct keyword in the notebook to unlock full cable.`;
+    evCable.style.borderColor = '#ef4444';
+    evCable.style.color = '#94a3b8';
+  }
+
+  btnTuneFromEvidence.style.display = 'block';
+  btnTuneFromEvidence.textContent = `TUNE RECEIVER TO ${sig.frequencyMHz.toFixed(1)} MHz`;
+  btnTuneFromEvidence.onclick = () => {
+    updateFrequency(sig.frequencyMHz);
+    modalEvidenceBoard?.classList.add('hidden');
+  };
+}
+
+function openEvidenceBoard(): void {
+  if (!modalEvidenceBoard || !pinboardPins || !pinboardStrings) return;
+  pinboardPins.innerHTML = '';
+  pinboardStrings.innerHTML = '';
+
+  // Station Echo-4 central listening post
+  const centerPin = document.createElement('div');
+  centerPin.className = 'pin-node solved';
+  centerPin.style.left = '50%';
+  centerPin.style.top = '50%';
+  centerPin.style.background = '#00e5ff';
+  centerPin.style.boxShadow = '0 0 14px #00e5ff';
+  centerPin.title = 'Station Echo-4 (Listening Post, Shemya)';
+  pinboardPins.appendChild(centerPin);
+
+  MYSTERY_SIGNALS.forEach((sig, idx) => {
+    const isSolved = notebook.isSignalSolved(sig.id);
+    const pin = document.createElement('div');
+    pin.className = `pin-node ${isSolved ? 'solved' : ''}`;
+    pin.style.left = `${sig.pinboardX}%`;
+    pin.style.top = `${sig.pinboardY}%`;
+    pin.innerHTML = `<span class="pin-label">${sig.frequencyMHz.toFixed(1)}M</span>`;
+    pin.title = `${sig.name} (${sig.coordinates})`;
+
+    pin.addEventListener('click', () => {
+      document.querySelectorAll('.pin-node').forEach(p => (p as HTMLElement).style.outline = 'none');
+      pin.style.outline = '2px solid #ffffff';
+      renderEvidenceDetail(sig);
+    });
+
+    pinboardPins.appendChild(pin);
+
+    // SVG string connection
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', '50%');
+    line.setAttribute('y1', '50%');
+    line.setAttribute('x2', `${sig.pinboardX}%`);
+    line.setAttribute('y2', `${sig.pinboardY}%`);
+    line.setAttribute('stroke', isSolved ? '#00ffaa' : '#ef4444');
+    line.setAttribute('stroke-width', isSolved ? '2' : '1');
+    line.setAttribute('stroke-dasharray', isSolved ? 'none' : '4 4');
+    line.setAttribute('opacity', '0.6');
+    pinboardStrings.appendChild(line);
+
+    if (idx === 0) {
+      renderEvidenceDetail(sig);
+    }
+  });
+
+  modalEvidenceBoard.classList.remove('hidden');
+}
+
+function openStationLogsModal(): void {
+  if (!modalStationLogs || !stationLogsContainer) return;
+  stationLogsContainer.innerHTML = '';
+
+  STATION_LOGS.forEach(log => {
+    const card = document.createElement('div');
+    card.style.cssText = 'background: #090f18; border: 1px solid #28374f; border-left: 3px solid #f59e0b; border-radius: 4px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px;';
+    card.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: 700; color: #fbbf24; font-size: 11px;">${log.title}</span>
+        <span style="font-size: 9px; color: #64748b; font-family: monospace;">${log.date}</span>
+      </div>
+      <div style="font-size: 10px; color: #38bdf8;">OPERATOR: ${log.author} // [${log.clearance}]</div>
+      <div style="font-size: 11px; color: #cbd5e1; line-height: 1.5; white-space: pre-line; margin-top: 4px;">${log.content}</div>
+    `;
+    stationLogsContainer.appendChild(card);
+  });
+
+  modalStationLogs.classList.remove('hidden');
+}
+
+btnEvidenceBoard?.addEventListener('click', openEvidenceBoard);
+btnCloseEvidence?.addEventListener('click', () => {
+  modalEvidenceBoard?.classList.add('hidden');
+});
+
+btnStationLogs?.addEventListener('click', openStationLogsModal);
+btnCloseLogs?.addEventListener('click', () => {
+  modalStationLogs?.classList.add('hidden');
+});
+
 // Modals
 btnMorseRef.addEventListener('click', () => {
   modalMorse.classList.remove('hidden');
@@ -275,14 +408,53 @@ btnRestartDossier.addEventListener('click', () => {
 
 // Global Keyboard Navigation
 window.addEventListener('keydown', (e) => {
+  // Toggle Evidence Board [B]
+  if (e.key === 'b' || e.key === 'B') {
+    const isInputActive = ['input', 'textarea'].includes((e.target as HTMLElement)?.tagName?.toLowerCase());
+    if (!isInputActive) {
+      e.preventDefault();
+      if (modalEvidenceBoard?.classList.contains('hidden')) {
+        openEvidenceBoard();
+      } else {
+        modalEvidenceBoard?.classList.add('hidden');
+      }
+      return;
+    }
+  }
+
+  // Toggle Station Logs [L]
+  if (e.key === 'l' || e.key === 'L') {
+    const isInputActive = ['input', 'textarea'].includes((e.target as HTMLElement)?.tagName?.toLowerCase());
+    if (!isInputActive) {
+      e.preventDefault();
+      if (modalStationLogs?.classList.contains('hidden')) {
+        openStationLogsModal();
+      } else {
+        modalStationLogs?.classList.add('hidden');
+      }
+      return;
+    }
+  }
+
   // Theme cycle [C]
   if (e.key === 'c' || e.key === 'C') {
     e.preventDefault();
     handleCycleTheme();
     return;
   }
+
+  // Close modals on Escape
+  if (e.key === 'Escape') {
+    modalEvidenceBoard?.classList.add('hidden');
+    modalStationLogs?.classList.add('hidden');
+    modalDossier?.classList.add('hidden');
+    modalMorse?.classList.add('hidden');
+    modalPause?.classList.add('hidden');
+    return;
+  }
+
   // Pause
-  if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+  if (e.key === 'p' || e.key === 'P') {
     e.preventDefault();
     togglePause();
     return;

@@ -156,5 +156,31 @@ describe('DeadAir Audio Reception & Solution Validation', () => {
     expect(notebook.isSignalSolved('signal-blackout')).toBe(true);
     expect(notebook.isSignalSolved('non-existent')).toBe(false);
   });
+
+  it('should verify world building data integrity (coordinates, classification, station logs)', async () => {
+    const { MYSTERY_SIGNALS, STATION_LOGS } = await import('../signals');
+
+    expect(MYSTERY_SIGNALS.length).toBe(5);
+    MYSTERY_SIGNALS.forEach(sig => {
+      expect(sig.coordinates).toBeDefined();
+      expect(sig.interceptDate).toBeDefined();
+      expect(sig.classification).toBeDefined();
+      expect(sig.declassifiedCable.length).toBeGreaterThan(20);
+      expect(sig.pinboardX).toBeGreaterThanOrEqual(10);
+      expect(sig.pinboardX).toBeLessThanOrEqual(90);
+      expect(sig.pinboardY).toBeGreaterThanOrEqual(10);
+      expect(sig.pinboardY).toBeLessThanOrEqual(90);
+    });
+
+    expect(STATION_LOGS.length).toBeGreaterThanOrEqual(4);
+    STATION_LOGS.forEach(log => {
+      expect(log.id).toBeDefined();
+      expect(log.date).toBeDefined();
+      expect(log.author).toBeDefined();
+      expect(log.title).toBeDefined();
+      expect(log.content.length).toBeGreaterThan(30);
+    });
+  });
 });
+
 
