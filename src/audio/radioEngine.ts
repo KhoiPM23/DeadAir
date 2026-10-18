@@ -540,6 +540,48 @@ export class RadioEngine {
     };
   }
 
+  /**
+   * Tactile dial click feedback (synthesized bakelite rotary ratchet tick)
+   */
+  public playDialTick(): void {
+    if (!this.ctx || !this.params.powerOn || this.params.isMuted) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const now = this.ctx.currentTime;
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(1200 + Math.random() * 300, now);
+      osc.frequency.exponentialRampToValueAtTime(140, now + 0.01);
+      gain.gain.setValueAtTime(0.04, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.01);
+      osc.connect(gain);
+      gain.connect(this.masterGain || this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.012);
+    } catch {}
+  }
+
+  /**
+   * Cold War carrier resonance lock chime when tuned on carrier center
+   */
+  public playCarrierLockChime(): void {
+    if (!this.ctx || !this.params.powerOn || this.params.isMuted) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const now = this.ctx.currentTime;
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.setValueAtTime(1320, now + 0.06);
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+      osc.connect(gain);
+      gain.connect(this.masterGain || this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.2);
+    } catch {}
+  }
+
   public destroy(): void {
     this.stopTape();
     if (this.timerHandle) clearInterval(this.timerHandle);

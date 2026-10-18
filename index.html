@@ -461,6 +461,37 @@
       0% { transform: translate(-50%, -50%) scale(0.9); }
       100% { transform: translate(-50%, -50%) scale(1.2); }
     }
+    @keyframes radarSweep {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .radar-sweeper {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 500px;
+      height: 500px;
+      margin-top: -250px;
+      margin-left: -250px;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, rgba(0, 229, 255, 0.22) 0deg, rgba(0, 229, 255, 0.04) 40deg, transparent 75deg);
+      animation: radarSweep 6s linear infinite;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .radar-line {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 250px;
+      height: 1.5px;
+      background: linear-gradient(90deg, rgba(0, 255, 170, 0.95), transparent);
+      transform-origin: 0 0;
+      animation: radarSweep 6s linear infinite;
+      pointer-events: none;
+      box-shadow: 0 0 10px rgba(0, 255, 170, 0.8);
+      z-index: 3;
+    }
     .pin-label {
       position: absolute;
       top: 20px;
@@ -749,8 +780,11 @@
             <!-- Dynamic SVG String Connections -->
             <g id="pinboardStrings"></g>
           </svg>
+          <!-- Animated Radar Sweep Beam -->
+          <div class="radar-sweeper"></div>
+          <div class="radar-line"></div>
           <!-- Pins rendered dynamically -->
-          <div id="pinboardPins" style="position: absolute; inset: 0;"></div>
+          <div id="pinboardPins" style="position: absolute; inset: 0; z-index: 10;"></div>
         </div>
 
         <!-- Evidence Detail Card -->

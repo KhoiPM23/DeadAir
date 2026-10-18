@@ -104,13 +104,24 @@ btnStartBriefing.addEventListener('click', () => {
   }
 });
 
+let lastTickTime = 0;
+
 // Frequency controls
 function updateFrequency(freq: number): void {
   const clamped = Math.max(80.0, Math.min(520.0, parseFloat(freq.toFixed(1))));
+  const changed = Math.abs(radio.getParams().frequencyMHz - clamped) > 0.04;
   radio.setFrequency(clamped);
   freqSlider.value = clamped.toString();
   freqText.textContent = `${clamped.toFixed(2)} MHz`;
   sliderVal.textContent = `${clamped.toFixed(1)} MHz`;
+
+  if (changed) {
+    const now = performance.now();
+    if (now - lastTickTime > 35) {
+      radio.playDialTick();
+      lastTickTime = now;
+    }
+  }
 }
 
 freqSlider.addEventListener('input', () => {
@@ -551,6 +562,8 @@ document.querySelectorAll('.btn-tape-speed').forEach((btn) => {
   });
 });
 
+let prevLockedSignalId: string | null = null;
+
 // Render loop at 60fps
 function renderLoop(): void {
   if (!isPaused) {
@@ -558,6 +571,16 @@ function renderLoop(): void {
     const metrics = radio.getReceptionMetrics();
     const powerOn = radio.getParams().powerOn;
     const tapeStatus = radio.getTapeStatus();
+
+    // Carrier lock resonance audio stinger
+    if (powerOn && metrics.tunedSignal && metrics.signalStrength > 0.8 && Math.abs(metrics.heterodynePitchHz) < 150) {
+      if (prevLockedSignalId !== metrics.tunedSignal.id) {
+        radio.playCarrierLockChime();
+        prevLockedSignalId = metrics.tunedSignal.id;
+      }
+    } else if (!metrics.tunedSignal || metrics.signalStrength < 0.4) {
+      prevLockedSignalId = null;
+    }
 
     oscRenderer.render(analyser, metrics, powerOn, tapeStatus);
     updateUnresolvedBadge();
