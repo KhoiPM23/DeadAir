@@ -8,7 +8,17 @@ export class NotebookManager {
   constructor(onAllSolved?: () => void) {
     if (onAllSolved) this.onAllSolvedCallback = onAllSolved;
     MYSTERY_SIGNALS.forEach(s => this.hintsRevealed.set(s.id, 0));
+    try {
+      const saved = localStorage.getItem('deadair_solved_signals');
+      if (saved) {
+        const arr = JSON.parse(saved);
+        if (Array.isArray(arr)) {
+          arr.forEach((id: string) => this.solvedSignals.add(id));
+        }
+      }
+    } catch {}
     this.renderNotebookDOM();
+    this.solvedSignals.forEach(id => this.updateEntryUI(id, true));
   }
 
   public checkSolution(signalId: string, userInput: string): boolean {
@@ -24,6 +34,9 @@ export class NotebookManager {
 
     if (isCorrect) {
       this.solvedSignals.add(signalId);
+      try {
+        localStorage.setItem('deadair_solved_signals', JSON.stringify(Array.from(this.solvedSignals)));
+      } catch {}
       this.updateEntryUI(signalId, true);
 
       if (this.solvedSignals.size === MYSTERY_SIGNALS.length && this.onAllSolvedCallback) {
@@ -70,6 +83,9 @@ export class NotebookManager {
 
   public resetNotebook(): void {
     this.solvedSignals.clear();
+    try {
+      localStorage.removeItem('deadair_solved_signals');
+    } catch {}
     MYSTERY_SIGNALS.forEach(s => this.hintsRevealed.set(s.id, 0));
     this.renderNotebookDOM();
   }

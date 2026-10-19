@@ -85,10 +85,43 @@ const btnRestartDefcon = document.getElementById('btnRestartDefcon') as HTMLButt
 
 const modalBriefing = document.getElementById('modalBriefing') as HTMLElement;
 const btnStartBriefing = document.getElementById('btnStartBriefing') as HTMLButtonElement;
+const btnTitleEvidence = document.getElementById('btnTitleEvidence') as HTMLButtonElement | null;
+const btnTitleHandbook = document.getElementById('btnTitleHandbook') as HTMLButtonElement | null;
+const btnTitleSettings = document.getElementById('btnTitleSettings') as HTMLButtonElement | null;
+const briefingProgress = document.getElementById('briefingProgress') as HTMLElement | null;
+
+const btnPauseResetFreq = document.getElementById('btnPauseResetFreq') as HTMLButtonElement | null;
+const btnPauseEvidence = document.getElementById('btnPauseEvidence') as HTMLButtonElement | null;
+const btnPauseHandbook = document.getElementById('btnPauseHandbook') as HTMLButtonElement | null;
+const btnPauseSettings = document.getElementById('btnPauseSettings') as HTMLButtonElement | null;
+const btnPauseToMenu = document.getElementById('btnPauseToMenu') as HTMLButtonElement | null;
 
 const modalVictory = document.getElementById('modalVictory') as HTMLElement;
 const btnRestartDossier = document.getElementById('btnRestartDossier') as HTMLButtonElement;
+const btnVictoryEvidence = document.getElementById('btnVictoryEvidence') as HTMLButtonElement | null;
+const btnVictoryToMenu = document.getElementById('btnVictoryToMenu') as HTMLButtonElement | null;
 const unresolvedBadge = document.getElementById('unresolvedBadge') as HTMLElement;
+
+function closeAllModals(): void {
+  modalBriefing.classList.add('hidden');
+  modalMorse.classList.add('hidden');
+  modalPause.classList.add('hidden');
+  modalVictory.classList.add('hidden');
+  modalDossier?.classList.add('hidden');
+  modalEvidenceBoard?.classList.add('hidden');
+  modalStationLogs?.classList.add('hidden');
+  modalSettings?.classList.add('hidden');
+  modalHandbook?.classList.add('hidden');
+  modalDefconAlert?.classList.add('hidden');
+}
+
+function updateBriefingProgress(): void {
+  if (briefingProgress && typeof notebook !== 'undefined') {
+    const solved = notebook.getSolvedCount();
+    const total = notebook.getTotalCount();
+    briefingProgress.textContent = `${solved} / ${total} SIGNALS DECIPHERED`;
+  }
+}
 
 // Systems
 let isPaused = false;
@@ -267,6 +300,7 @@ function showDefconAlert(): void {
 const notebook = new NotebookManager(() => {
   showDefconAlert();
 });
+updateBriefingProgress();
 
 function updateUnresolvedBadge(): void {
   const remaining = notebook.getTotalCount() - notebook.getSolvedCount();
@@ -277,6 +311,7 @@ function updateUnresolvedBadge(): void {
     unresolvedBadge.textContent = `${remaining} UNRESOLVED FREQUENCIES`;
     unresolvedBadge.style.color = '#00e5ff';
   }
+  updateBriefingProgress();
 }
 
 // Power Button
@@ -297,10 +332,26 @@ function togglePower(): void {
 btnPower.addEventListener('click', togglePower);
 
 btnStartBriefing.addEventListener('click', () => {
+  radio.playDialTick();
   modalBriefing.classList.add('hidden');
   if (!radio.getParams().powerOn) {
     togglePower();
   }
+});
+
+btnTitleEvidence?.addEventListener('click', () => {
+  radio.playDialTick();
+  openEvidenceBoard();
+});
+
+btnTitleHandbook?.addEventListener('click', () => {
+  radio.playDialTick();
+  openHandbookModal();
+});
+
+btnTitleSettings?.addEventListener('click', () => {
+  radio.playDialTick();
+  openSettingsModal();
 });
 
 let lastTickTime = 0;
@@ -416,6 +467,47 @@ function togglePause(): void {
 btnMute.addEventListener('click', toggleMute);
 btnPause.addEventListener('click', togglePause);
 btnResumeGame.addEventListener('click', togglePause);
+
+btnPauseResetFreq?.addEventListener('click', () => {
+  radio.playDialTick();
+  updateFrequency(88.0);
+  modalPause.classList.add('hidden');
+  isPaused = false;
+  pauseLabel.textContent = 'PAUSE';
+});
+
+btnPauseEvidence?.addEventListener('click', () => {
+  radio.playDialTick();
+  modalPause.classList.add('hidden');
+  isPaused = false;
+  pauseLabel.textContent = 'PAUSE';
+  openEvidenceBoard();
+});
+
+btnPauseHandbook?.addEventListener('click', () => {
+  radio.playDialTick();
+  modalPause.classList.add('hidden');
+  isPaused = false;
+  pauseLabel.textContent = 'PAUSE';
+  openHandbookModal();
+});
+
+btnPauseSettings?.addEventListener('click', () => {
+  radio.playDialTick();
+  modalPause.classList.add('hidden');
+  isPaused = false;
+  pauseLabel.textContent = 'PAUSE';
+  openSettingsModal();
+});
+
+btnPauseToMenu?.addEventListener('click', () => {
+  radio.playDialTick();
+  closeAllModals();
+  isPaused = false;
+  pauseLabel.textContent = 'PAUSE';
+  modalBriefing.classList.remove('hidden');
+  updateBriefingProgress();
+});
 
 // Theme switching
 function handleCycleTheme(): void {
@@ -620,6 +712,17 @@ function restartDossierGame(): void {
 
 btnRestartDossier.addEventListener('click', restartDossierGame);
 btnRestartDefcon?.addEventListener('click', restartDossierGame);
+btnVictoryEvidence?.addEventListener('click', () => {
+  radio.playDialTick();
+  modalVictory.classList.add('hidden');
+  openEvidenceBoard();
+});
+btnVictoryToMenu?.addEventListener('click', () => {
+  radio.playDialTick();
+  closeAllModals();
+  modalBriefing.classList.remove('hidden');
+  updateBriefingProgress();
+});
 btnReviewEvidence?.addEventListener('click', () => {
   modalDefconAlert?.classList.add('hidden');
   openEvidenceBoard();
@@ -700,60 +803,135 @@ if (btnToggleFullscreen) {
 
 // Global Keyboard Navigation
 window.addEventListener('keydown', (e) => {
-  // Toggle Settings [O]
-  if (e.key === 'o' || e.key === 'O') {
-    const isInputActive = ['input', 'textarea'].includes((e.target as HTMLElement)?.tagName?.toLowerCase());
-    if (!isInputActive) {
+  const isInputActive = ['input', 'textarea'].includes((e.target as HTMLElement)?.tagName?.toLowerCase());
+  if (isInputActive) {
+    if (e.key === 'Escape') {
+      (e.target as HTMLElement).blur();
+    }
+    return;
+  }
+
+  // Briefing Screen Shortcuts
+  if (!modalBriefing.classList.contains('hidden')) {
+    if (e.code === 'Space' || e.key === 'Enter') {
       e.preventDefault();
-      if (modalSettings?.classList.contains('hidden')) {
-        openSettingsModal();
-      } else {
-        closeSettingsModal();
-      }
+      btnStartBriefing.click();
       return;
     }
+    if (e.key === 'b' || e.key === 'B') {
+      e.preventDefault();
+      btnTitleEvidence?.click();
+      return;
+    }
+    if (e.key === 'h' || e.key === 'H') {
+      e.preventDefault();
+      btnTitleHandbook?.click();
+      return;
+    }
+    if (e.key === 'o' || e.key === 'O') {
+      e.preventDefault();
+      btnTitleSettings?.click();
+      return;
+    }
+    return;
+  }
+
+  // Pause Modal Ladder Shortcuts
+  if (!modalPause.classList.contains('hidden')) {
+    if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+      e.preventDefault();
+      togglePause();
+      return;
+    }
+    if (e.key === 'r' || e.key === 'R') {
+      e.preventDefault();
+      btnPauseResetFreq?.click();
+      return;
+    }
+    if (e.key === 'b' || e.key === 'B') {
+      e.preventDefault();
+      btnPauseEvidence?.click();
+      return;
+    }
+    if (e.key === 'h' || e.key === 'H') {
+      e.preventDefault();
+      btnPauseHandbook?.click();
+      return;
+    }
+    if (e.key === 'o' || e.key === 'O') {
+      e.preventDefault();
+      btnPauseSettings?.click();
+      return;
+    }
+    if (e.key === 'm' || e.key === 'M') {
+      e.preventDefault();
+      btnPauseToMenu?.click();
+      return;
+    }
+    return;
+  }
+
+  // Victory Modal Shortcuts
+  if (!modalVictory.classList.contains('hidden')) {
+    if (e.key === 'b' || e.key === 'B') {
+      e.preventDefault();
+      btnVictoryEvidence?.click();
+      return;
+    }
+    if (e.key === 'm' || e.key === 'M') {
+      e.preventDefault();
+      btnVictoryToMenu?.click();
+      return;
+    }
+    if (e.key === 'r' || e.key === 'R') {
+      e.preventDefault();
+      restartDossierGame();
+      return;
+    }
+  }
+
+  // Toggle Settings [O]
+  if (e.key === 'o' || e.key === 'O') {
+    e.preventDefault();
+    if (modalSettings?.classList.contains('hidden')) {
+      openSettingsModal();
+    } else {
+      closeSettingsModal();
+    }
+    return;
   }
 
   // Toggle Handbook [H]
   if (e.key === 'h' || e.key === 'H') {
-    const isInputActive = ['input', 'textarea'].includes((e.target as HTMLElement)?.tagName?.toLowerCase());
-    if (!isInputActive) {
-      e.preventDefault();
-      if (modalHandbook?.classList.contains('hidden')) {
-        openHandbookModal();
-      } else {
-        closeHandbookModal();
-      }
-      return;
+    e.preventDefault();
+    if (modalHandbook?.classList.contains('hidden')) {
+      openHandbookModal();
+    } else {
+      closeHandbookModal();
     }
+    return;
   }
 
   // Toggle Evidence Board [B]
   if (e.key === 'b' || e.key === 'B') {
-    const isInputActive = ['input', 'textarea'].includes((e.target as HTMLElement)?.tagName?.toLowerCase());
-    if (!isInputActive) {
-      e.preventDefault();
-      if (modalEvidenceBoard?.classList.contains('hidden')) {
-        openEvidenceBoard();
-      } else {
-        modalEvidenceBoard?.classList.add('hidden');
-      }
-      return;
+    e.preventDefault();
+    if (modalEvidenceBoard?.classList.contains('hidden')) {
+      openEvidenceBoard();
+    } else {
+      modalEvidenceBoard?.classList.add('hidden');
     }
+    return;
   }
 
   // Toggle Station Logs [L]
   if (e.key === 'l' || e.key === 'L') {
-    const isInputActive = ['input', 'textarea'].includes((e.target as HTMLElement)?.tagName?.toLowerCase());
-    if (!isInputActive) {
-      e.preventDefault();
-      if (modalStationLogs?.classList.contains('hidden')) {
-        openStationLogsModal();
-      } else {
-        modalStationLogs?.classList.add('hidden');
-      }
-      return;
+    e.preventDefault();
+    if (modalStationLogs?.classList.contains('hidden')) {
+      openStationLogsModal();
+    } else {
+      modalStationLogs?.classList.add('hidden');
     }
+    return;
   }
 
   // Theme cycle [C]
@@ -804,8 +982,7 @@ window.addEventListener('keydown', (e) => {
   }
 
   // Preset Channels [1]..[5]
-  const isInputActive = ['input', 'textarea'].includes((e.target as HTMLElement)?.tagName?.toLowerCase());
-  if (!isInputActive && e.key >= '1' && e.key <= '5') {
+  if (e.key >= '1' && e.key <= '5') {
     const idx = parseInt(e.key, 10) - 1;
     if (idx < MYSTERY_SIGNALS.length) {
       e.preventDefault();

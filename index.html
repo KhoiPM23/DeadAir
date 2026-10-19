@@ -819,9 +819,19 @@
         <div>• <strong>Spectrogram:</strong> Watch the CRT waterfall for hidden steganography text.</div>
         <div>• <strong>Dossier:</strong> Record your deductions into the evidence notebook to authorize extraction.</div>
       </div>
-      <button id="btnStartBriefing" class="btn-step" style="background: #00e5ff; color: #080c12; font-weight: 700; padding: 10px 28px; font-size: 12px; align-self: center;">
-        INITIALIZE RECEIVER RACK
-      </button>
+      <div style="display: flex; flex-direction: column; gap: 8px; width: 100%; align-items: center; margin-top: 8px;">
+        <button id="btnStartBriefing" class="btn-step" style="background: #00e5ff; color: #080c12; font-weight: 700; padding: 12px 28px; font-size: 13px; width: 100%; justify-content: center;">
+          INITIALIZE RECEIVER RACK [SPACE / ENTER]
+        </button>
+        <div style="display: flex; gap: 6px; width: 100%;">
+          <button id="btnTitleEvidence" class="btn-step" style="flex: 1; justify-content: center; font-size: 11px; border-color: #ef4444; color: #f87171;">EVIDENCE [B]</button>
+          <button id="btnTitleHandbook" class="btn-step" style="flex: 1; justify-content: center; font-size: 11px; border-color: #34d399; color: #34d399;">HANDBOOK [H]</button>
+          <button id="btnTitleSettings" class="btn-step" style="flex: 1; justify-content: center; font-size: 11px; border-color: #38bdf8; color: #38bdf8;">OPTIONS [O]</button>
+        </div>
+        <div id="briefingProgress" style="font-size: 11px; color: #00e5ff; letter-spacing: 1px; margin-top: 4px;">
+          0 / 5 SIGNALS DECIPHERED
+        </div>
+      </div>
     </div>
   </div>
 
@@ -844,21 +854,43 @@
     </div>
   </div>
 
-  <!-- Pause Modal -->
+  <!-- Pause Modal with Full Action Ladder -->
   <div id="modalPause" class="modal-backdrop hidden">
-    <div class="modal-box" style="border-color: #38bdf8;">
-      <h3 style="color: #38bdf8;">RECEIVER MONITORING PAUSED</h3>
-      <p style="color: #cbd5e1; font-size: 12px;">Audio synthesis and CRT oscilloscope scan suspended. Press [P] or click below to resume.</p>
-      <button id="btnResumeGame" class="btn-step" style="background: #38bdf8; color: #080c12; font-weight: 700; padding: 8px 20px; align-self: center;">
-        RESUME INTERCEPT
-      </button>
+    <div class="modal-box" style="border-color: #38bdf8; max-width: 440px;">
+      <div style="font-size: 10px; color: #38bdf8; letter-spacing: 2px; font-weight: 700;">INTERCEPT MONITORING SUSPENDED</div>
+      <h3 style="color: #38bdf8; font-size: 20px; margin: 4px 0 8px;">RECEIVER STANDBY</h3>
+      <p style="color: #cbd5e1; font-size: 12px; margin-bottom: 16px;">
+        Audio synthesis and CRT oscilloscope scan suspended. Select an action:
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+        <button id="btnResumeGame" class="btn-step" style="background: #38bdf8; color: #080c12; font-weight: 700; justify-content: center; padding: 10px 20px;">
+          RESUME INTERCEPT [P / ESC]
+        </button>
+        <button id="btnPauseResetFreq" class="btn-step" style="justify-content: center; border-color: #ffd700; color: #ffd700;">
+          RESET FREQUENCY DIAL [R]
+        </button>
+        <button id="btnPauseEvidence" class="btn-step" style="justify-content: center; border-color: #ef4444; color: #f87171;">
+          EVIDENCE BOARD [B]
+        </button>
+        <button id="btnPauseHandbook" class="btn-step" style="justify-content: center; border-color: #34d399; color: #34d399;">
+          SIGINT HANDBOOK [H]
+        </button>
+        <button id="btnPauseSettings" class="btn-step" style="justify-content: center; border-color: #94a3b8; color: #cbd5e1;">
+          RECEIVER OPTIONS [O]
+        </button>
+        <button id="btnPauseToMenu" class="btn-step" style="justify-content: center; border-color: #ef4444; color: #f87171;">
+          ABORT TO STATION BRIEFING [M]
+        </button>
+      </div>
     </div>
   </div>
 
   <!-- All Mystery Solved Modal -->
   <div id="modalVictory" class="modal-backdrop hidden">
-    <div class="modal-box">
-      <h2 style="color: #00ffaa; font-size: 22px;">ALL 5 CLASSIFIED SIGNALS DECIPHERED // EXTRACTION DISPATCHED</h2>
+    <div class="modal-box" style="border-color: #00ffaa; max-width: 560px;">
+      <div style="font-size: 10px; color: #00ffaa; letter-spacing: 2px; font-weight: 700;">STATION 47 // INCIDENT REPORT FINALIZED</div>
+      <h2 style="color: #00ffaa; font-size: 22px; margin: 4px 0 8px;">ALL 5 CLASSIFIED SIGNALS DECIPHERED</h2>
+      <div style="font-size: 12px; color: #ffd700; font-weight: 700; margin-bottom: 12px;">RANK: CHIEF CRYPTO-ANALYST // MAXIMUM CLEARANCE</div>
       <p style="color: #cbd5e1; font-size: 12px; line-height: 1.6; text-align: left;">
         Your intelligence synthesis has reconstructed the full incident timeline:<br><br>
         <strong>1. Outpost Echo:</strong> Confirmed initial emergency distress beacon.<br>
@@ -867,12 +899,22 @@
         <strong>4. Project ICARUS:</strong> Real-time spectral waterfall telemetry decoded.<br>
         <strong>5. Operation VOID:</strong> Analog tape deck slowed 4x burst numbers station.
       </p>
-      <div style="background: rgba(0, 255, 170, 0.1); border: 1px solid #00ffaa; border-radius: 4px; padding: 8px; font-size: 11px; color: #00ffaa;">
-        EXTRACTION CHOPPER INBOUND: COORDINATES 45.2°N, 12.8°E
+      <div style="background: rgba(0, 255, 170, 0.1); border: 1px solid #00ffaa; border-radius: 4px; padding: 8px; font-size: 11px; color: #00ffaa; margin-bottom: 12px;">
+        EXTRACTION CHOPPER INBOUND: COORDINATES 45.2°N, 12.8°E // DOSSIER ARCHIVED
       </div>
-      <button id="btnRestartDossier" class="btn-step" style="background: #00ffaa; color: #080c12; font-weight: 700; padding: 10px 24px; align-self: center;">
-        ARCHIVE CASE & REPLAY
-      </button>
+      <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+        <button id="btnRestartDossier" class="btn-step" style="background: #00ffaa; color: #080c12; font-weight: 700; justify-content: center; padding: 10px 24px;">
+          ARCHIVE CASE & REPLAY
+        </button>
+        <div style="display: flex; gap: 8px; width: 100%;">
+          <button id="btnVictoryEvidence" class="btn-step" style="flex: 1; justify-content: center; border-color: #ef4444; color: #f87171;">
+            EVIDENCE BOARD [B]
+          </button>
+          <button id="btnVictoryToMenu" class="btn-step" style="flex: 1; justify-content: center; border-color: #00e5ff; color: #00e5ff;">
+            STATION BRIEFING [M]
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
